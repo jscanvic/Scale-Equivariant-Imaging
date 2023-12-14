@@ -1,0 +1,7 @@
+deepinv @ git+https://github.com/deepinv/deepinv.git@a668f5bddfcd13ee1304bf6acc8f86a47a2e4c99
+kornia==0.6.12
+Pillow==9.5.0
+torch==2.0.0
+torchmetrics==0.11.4
+torchvision==0.15.1
+tqdm==4.65.0
