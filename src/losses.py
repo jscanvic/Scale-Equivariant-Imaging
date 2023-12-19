@@ -43,7 +43,6 @@ class Scale(Module):
         center = 2 * center - 1
 
         # Compute the sampling grid for the scale transformation
-        u = torch.linspace(-1, 1, w)
         u = torch.arange(w, dtype=x.dtype, device=x.device)
         v = torch.arange(h, dtype=x.dtype, device=x.device)
         u = 2 / w * u - 1
