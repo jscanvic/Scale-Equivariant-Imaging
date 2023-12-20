@@ -10,7 +10,9 @@ def sample_from(values, shape=(1,), dtype=torch.float32, device="cpu"):
     """Sample a random tensor from a list of values"""
     values = torch.tensor(values, device=device, dtype=dtype)
     N = torch.tensor(len(values), device=device, dtype=dtype)
-    indices = torch.floor(N * torch.rand(shape, device=device, dtype=dtype)).to(torch.int)
+    indices = torch.floor(N * torch.rand(shape, device=device, dtype=dtype)).to(
+        torch.int
+    )
     return values[indices]
 
 
@@ -29,10 +31,11 @@ class Scale(Module):
     :param str padding_mode: padding mode for grid sampling
     :param str mode: interpolation mode for grid sampling
     """
+
     def __init__(self, factors=None, padding_mode="reflection", mode="bicubic"):
         super().__init__()
 
-        self.factors = factors or [.75, .5]
+        self.factors = factors or [0.75, 0.5]
         self.padding_mode = padding_mode
         self.mode = mode
 

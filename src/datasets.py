@@ -174,13 +174,13 @@ class TestDataset(Dataset):
     """
 
     def __init__(
-            self,
-            root,
-            split,
-            physics,
-            resize=None,
-            device="cpu",
-            download=False,
+        self,
+        root,
+        split,
+        physics,
+        resize=None,
+        device="cpu",
+        download=False,
     ):
         self.resize = resize
         self.split = split

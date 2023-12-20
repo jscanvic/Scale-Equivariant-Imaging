@@ -11,6 +11,7 @@ class Downsampling(LinearPhysics):
     :param int factor: downsampling factor
     :param bool antialias: antialiasing
     """
+
     def __init__(self, factor=2, antialias=True):
         super().__init__()
         self.factor = factor
