@@ -199,8 +199,8 @@ class TestDataset(Dataset):
 
         # crop x to make its dimensions be a multiple of u's dimensions
         if x.shape != y.shape:
-            h, w = y.shape[2], y.shape[3]
-            f = int(ceil(x.shape[2] / y.shape[2]))
+            h, w = y.shape[1], y.shape[2]
+            f = int(ceil(x.shape[1] / y.shape[1]))
             x = TF.crop(x, top=0, left=0, height=h * f, width=w * f)
 
         return x, y
