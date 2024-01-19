@@ -22,7 +22,9 @@ parser.add_argument("--kernel", type=str, default=None)
 parser.add_argument("--noise_level", type=int)
 parser.add_argument("--out_dir", type=str, default="./results")
 parser.add_argument("--device", type=str, default="cpu")
+parser.add_argument("--data_parallel_devices", type=str, default=None)
 parser.add_argument("--download", action="store_true")
+parser.add_argument("--byol_decay", type=float, default=0.99)
 args = parser.parse_args()
 
 assert args.method in [
@@ -34,9 +36,16 @@ assert args.method in [
 ], "Unsupported training method"
 assert args.task in ["sr", "deblurring"], "Unsupported task"
 
-model = get_model(args.task, args.sr_factor)
+data_parallel_devices = args.data_parallel_devices.split(",") if args.data_parallel_devices is not None else None
+
+model = get_model(args.task, args.sr_factor, device=args.device, data_parallel_devices=data_parallel_devices)
 model.to(args.device)
 model.train()
+
+byol_model = get_model(args.task, args.sr_factor, device=args.device, data_parallel_devices=data_parallel_devices)
+byol_model.to(args.device)
+byol_model.train()
+byol_params = dict(byol_model.named_parameters())
 
 physics = get_physics(
     task=args.task,
@@ -61,7 +70,9 @@ eval_dataset = EvalDataset(
     dataset_root, physics, resize=resize, download=args.download, device=args.device
 )
 
-losses = get_losses(args.method, args.noise_level, args.stop_gradient)
+losses = get_losses(
+    args.method, args.noise_level, args.stop_gradient, byol_params=byol_params
+)
 
 batch_size = 16 if args.task == "sr" else 8
 training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
@@ -100,6 +111,14 @@ for epoch in range(epochs):
 
         training_loss.backward()
         optimizer.step()
+
+        # byol update
+        params = dict(model.named_parameters())
+        for k, byol_param in byol_params.items():
+            param = params[k]
+            byol_param.data = (
+                args.byol_decay * byol_param.data + (1 - args.byol_decay) * param.data
+            )
 
         loss_meter.update(training_loss.item())
 

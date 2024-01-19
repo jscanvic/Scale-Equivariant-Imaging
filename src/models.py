@@ -1,8 +1,9 @@
 from deepinv.models import SwinIR
 from torch import nn
+from torch.nn.parallel import DataParallel
 
 
-def get_model(task, sr_factor=None):
+def get_model(task, sr_factor=None, device=None, data_parallel_devices=None):
     """
     Get a model with randomly initialized weights for the given task
 
@@ -11,7 +12,7 @@ def get_model(task, sr_factor=None):
     """
     upscale = sr_factor if task == "sr" else 1
     upsampler = "pixelshuffle" if task == "sr" else None
-    return SwinIR(
+    model = SwinIR(
         img_size=48,
         patch_size=1,
         in_chans=3,
@@ -35,3 +36,7 @@ def get_model(task, sr_factor=None):
         resi_connection="1conv",
         pretrained=None,
     )
+    if data_parallel_devices is not None:
+        devices = data_parallel_devices
+        model = DataParallel(model, device_ids=devices, output_device=device)
+    return model

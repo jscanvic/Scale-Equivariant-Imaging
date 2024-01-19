@@ -3,10 +3,10 @@ import torch.nn.functional as F
 from deepinv.loss import SupLoss, SureGaussianLoss
 from deepinv.loss.metric import mse
 from deepinv.transform import Rotate, Shift
-from torch.nn import Module
+from torch.nn import Module, Parameter
 
 
-class EILoss(nn.Module):
+class EILoss(Module):
     r"""
     Equivariant imaging self-supervised loss.
 
@@ -44,6 +44,7 @@ class EILoss(nn.Module):
         apply_noise=True,
         weight=1.0,
         no_grad=True,
+        byol_params=None,
     ):
         super(EILoss, self).__init__()
         self.name = "ei"
@@ -52,8 +53,9 @@ class EILoss(nn.Module):
         self.T = transform
         self.noise = apply_noise
         self.no_grad = no_grad
+        self.byol_params = byol_params
 
-    def forward(self, x_net, physics, model, **kwargs):
+    def forward(self, y, x_net, physics, model, **kwargs):
         r"""
         Computes the EI loss
 
@@ -63,6 +65,20 @@ class EILoss(nn.Module):
         :return: (torch.Tensor) loss.
         """
 
+        if self.byol_params is not None:
+            # set model params as byol params temporarily
+            original_params = {
+                k: Parameter(param.data, requires_grad=param.requires_grad) for k, param in model.named_parameters()
+            }
+            for name, param in model.named_parameters():
+                param.data = self.byol_params[name].data
+
+            x_net = model(y, physics)
+
+            # restore original params
+            for name, param in model.named_parameters():
+                param.data = original_params[name].data
+
         if self.no_grad:
             with torch.no_grad():
                 x2 = self.T(x_net)
@@ -70,9 +86,9 @@ class EILoss(nn.Module):
             x2 = self.T(x_net)
 
         if self.noise:
-            y = physics(x2)
+            y2 = physics(x2)
         else:
-            y = physics.A(x2)
+            y2 = physics.A(x2)
 
         x3 = model(y, physics)
 
@@ -141,7 +157,7 @@ class Scale(Module):
         )
 
 
-def get_losses(method, noise_level, stop_gradient):
+def get_losses(method, noise_level, stop_gradient, byol_params=None):
     """
     Get the losses for a given training setting
 
@@ -172,7 +188,12 @@ def get_losses(method, noise_level, stop_gradient):
             losses.append(SureGaussianLoss(sigma=noise_level / 255))
         elif loss_name == "ei":
             losses.append(
-                EILoss(metric=mse(), transform=ei_transform, no_grad=stop_gradient)
+                EILoss(
+                    metric=mse(),
+                    transform=ei_transform,
+                    no_grad=stop_gradient,
+                    byol_params=byol_params,
+                )
             )
 
     return losses
