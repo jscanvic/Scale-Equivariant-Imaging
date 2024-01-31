@@ -20,6 +20,9 @@ class Downsampling(LinearPhysics):
     def A(self, x):
         return imresize(x, scale=1 / self.factor, antialiasing=self.antialias)
 
+    def A_adjoint(self, x):
+        return imresize(x, scale=self.factor, antialiasing=self.antialias)
+
 
 def get_physics(task, noise_level, kernel_path=None, sr_factor=None, device="cpu"):
     """
