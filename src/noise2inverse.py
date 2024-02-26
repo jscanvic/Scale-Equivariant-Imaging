@@ -14,9 +14,9 @@ def n2i_slices(y, num_splits=4):
     slices = []
 
     for j in range(num_splits):
-        slices = torch.zeros_like(y)
-        slices[:, :, j::num_splits, :] = y[:, :, j::num_splits, :]
-        slices.append(slices)
+        slice = torch.zeros_like(y)
+        slice[:, :, j::num_splits, :] = y[:, :, j::num_splits, :]
+        slices.append(slice)
 
     return slices
 
