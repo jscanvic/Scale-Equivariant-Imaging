@@ -88,6 +88,8 @@ def get_losses(method, noise_level, stop_gradient):
     elif method == "ei-shift":
         loss_names = ["sure", "ei"]
         ei_transform = Shift()
+    elif method == "noise2inverse":
+        loss_names = ["sup"]
 
     losses = []
 

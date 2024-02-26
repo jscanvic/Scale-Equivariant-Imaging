@@ -7,6 +7,7 @@ from torchvision.datasets.utils import download_and_extract_archive
 from torchvision.transforms import InterpolationMode, functional as TF
 from torchvision.transforms.functional import to_tensor
 from deepinv.datasets import HDF5Dataset
+from noise2inverse import n2i_pair
 
 
 def minsize_pad(x, size, padding_mode="constant", fill=0):
@@ -136,14 +137,16 @@ class TrainingDataset(Dataset):
     :param str device: device to use
     """
 
-    def __init__(self, root, physics, resize, css=False, download=False, device="cpu", dataset="div2k", force_rgb=False):
+    def __init__(self, root, physics, resize, css=False, download=False, device="cpu", dataset="div2k", force_rgb=False, method=None, patch_size=48):
         super().__init__()
         self.root = root
         self.physics = physics
         self.resize = resize
-        self.css = css
+        self.css = css or method == "css"
+        self.method = method
         self.device = device
         self.force_rgb = force_rgb
+        self.patch_size = patch_size
 
         assert dataset in ["div2k", "urban100", "ct"]
         self.dataset = dataset
@@ -158,8 +161,19 @@ class TrainingDataset(Dataset):
             x = self.physics(x.unsqueeze(0)).squeeze(0)
 
         y = self.physics(x.unsqueeze(0)).squeeze(0)
-        x_patch, y_patch = get_random_patch_pair(x, y)
-        return x_patch, y_patch
+
+        from torchvision.utils import save_image
+
+        save_image(x, f"__debug/x.png")
+        save_image(y, f"__debug/y.png")
+
+        if self.method == "noise2inverse":
+            x, y = n2i_pair(y.unsqueeze(0)).squeeze(0)
+
+        save_image(y, f"__debug/inp.png")
+        save_image(x, f"__debug/tgt.png")
+
+        return get_random_patch_pair(x, y, size=48)
 
     def __len__(self):
         if self.dataset == "div2k":
