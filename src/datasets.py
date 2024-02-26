@@ -7,6 +7,7 @@ from torchvision.datasets.utils import download_and_extract_archive
 from torchvision.transforms import InterpolationMode, functional as TF
 from torchvision.transforms.functional import to_tensor
 from deepinv.datasets import HDF5Dataset
+from noise2inverse import n2i_pair
 
 
 def minsize_pad(x, size, padding_mode="constant", fill=0):
