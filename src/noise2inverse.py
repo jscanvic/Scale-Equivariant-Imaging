@@ -25,13 +25,13 @@ def n2i_pair(y, strategy="X:1", num_splits=4):
     slices = n2i_slices(y, num_splits=num_splits)
 
     if strategy == "X:1":
-        num_input = self.num_splits - 1
+        num_input = num_splits - 1
     else:
         num_input = 1
 
     split_idxs = set(range(num_splits))
     input_idxs = list(combinations(split_idxs, num_input))
-    target_idxs = [split_idxs - set(idxs) for idxs in self.input_idxs]
+    target_idxs = [split_idxs - set(idxs) for idxs in input_idxs]
 
     inputs = [slices[j] for j in input_idxs]
     targets = [slices[j] for j in target_idxs]
