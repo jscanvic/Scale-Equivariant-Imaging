@@ -24,6 +24,13 @@ def n2i_slices(y, num_splits=4):
 def n2i_pair(y, strategy="X:1", num_splits=4):
     slices = n2i_slices(y, num_splits=num_splits)
 
+    # save all slices for debugging purposes
+    from torchvision.utils import save_image
+
+    for i, slice in enumerate(slices):
+        for j in range(slice.shape[0]):
+            save_image(slice[j], f"__debug/slice_{i}_{j}.png")
+
     if strategy == "X:1":
         num_input = num_splits - 1
     else:

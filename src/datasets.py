@@ -162,8 +162,22 @@ class TrainingDataset(Dataset):
 
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
+        from torchvision.utils import save_image
+
+        for j in range(x.shape[0]):
+            save_image(x[j], f"__debug/x_{j}.png")
+
+        for j in range(y.shape[0]):
+            save_image(y[j], f"__debug/y_{j}.png")
+
         if self.method == "noise2inverse":
             x, y = n2i_pair(y.unsqueeze(0)).squeeze(0)
+
+        for j in range(y.shape[0]):
+            save_image(y[j], f"__debug/inp_{j}.png")
+
+        for j in range(x.shape[0]):
+            save_image(x[j], f"__debug/tgt_{j}.png")
 
         return get_random_patch_pair(x, y, size=48)
 
