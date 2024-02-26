@@ -61,6 +61,7 @@ dataset_root = "./datasets"
 css = args.method == "css"
 resize = None if args.sr_factor == "sr" else 256
 force_rgb = args.dataset == "ct"
+patch_size = 48 if args.method != "noise2inverse" else 256
 training_dataset = TrainingDataset(
     dataset_root,
     physics,
@@ -70,7 +71,8 @@ training_dataset = TrainingDataset(
     device=args.device,
     dataset=args.dataset,
     force_rgb=force_rgb,
-    method=args.method
+    method=args.method,
+    patch_size=patch_size
 )
 eval_dataset = EvalDataset(
     dataset_root,
@@ -79,7 +81,7 @@ eval_dataset = EvalDataset(
     download=args.download,
     device=args.device,
     dataset=args.dataset,
-    force_rgb=force_rgb
+    force_rgb=force_rgb,
 )
 
 losses = get_losses(args.method, args.noise_level, args.stop_gradient)

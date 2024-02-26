@@ -137,7 +137,7 @@ class TrainingDataset(Dataset):
     :param str device: device to use
     """
 
-    def __init__(self, root, physics, resize, css=False, download=False, device="cpu", dataset="div2k", force_rgb=False, method=None):
+    def __init__(self, root, physics, resize, css=False, download=False, device="cpu", dataset="div2k", force_rgb=False, method=None, patch_size=48):
         super().__init__()
         self.root = root
         self.physics = physics
@@ -146,6 +146,7 @@ class TrainingDataset(Dataset):
         self.method = method
         self.device = device
         self.force_rgb = force_rgb
+        self.patch_size = patch_size
 
         assert dataset in ["div2k", "urban100", "ct"]
         self.dataset = dataset
@@ -161,10 +162,10 @@ class TrainingDataset(Dataset):
 
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
-        if self.method != "noise2inverse":
-            return get_random_patch_pair(x, y)
-        else:
-            return n2i_pair(y)
+        if self.method == "noise2inverse":
+            x, y = n2i_pair(y.unsqueeze(0)).squeeze(0)
+
+        return get_random_patch_pair(x, y, size=48)
 
     def __len__(self):
         if self.dataset == "div2k":
