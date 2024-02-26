@@ -136,12 +136,13 @@ class TrainingDataset(Dataset):
     :param str device: device to use
     """
 
-    def __init__(self, root, physics, resize, css=False, download=False, device="cpu", dataset="div2k", force_rgb=False):
+    def __init__(self, root, physics, resize, css=False, download=False, device="cpu", dataset="div2k", force_rgb=False, method=None):
         super().__init__()
         self.root = root
         self.physics = physics
         self.resize = resize
-        self.css = css
+        self.css = css or method == "css"
+        self.method = method
         self.device = device
         self.force_rgb = force_rgb
 
@@ -158,8 +159,11 @@ class TrainingDataset(Dataset):
             x = self.physics(x.unsqueeze(0)).squeeze(0)
 
         y = self.physics(x.unsqueeze(0)).squeeze(0)
-        x_patch, y_patch = get_random_patch_pair(x, y)
-        return x_patch, y_patch
+
+        if self.method != "noise2inverse":
+            return get_random_patch_pair(x, y)
+        else:
+            return n2i_pair(y)
 
     def __len__(self):
         if self.dataset == "div2k":

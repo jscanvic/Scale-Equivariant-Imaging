@@ -37,6 +37,7 @@ assert args.method in [
     "ei-shift",
     "dip",
     "pnp",
+    "noise2inverse"
 ], "Unsupported training method"
 assert args.task in ["sr", "deblurring"], "Unsupported task"
 
@@ -69,6 +70,7 @@ training_dataset = TrainingDataset(
     device=args.device,
     dataset=args.dataset,
     force_rgb=force_rgb,
+    method=args.method
 )
 eval_dataset = EvalDataset(
     dataset_root,
