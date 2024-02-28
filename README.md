@@ -1,4 +1,4 @@
-# Self-Supervised Learning for Image Super-Resolution and Deblurring (CVPR 2024 submission)
+# Self-Supervised Learning for Image Super-Resolution and Deblurring
 
 The implementation of ["Self-Supervised Learning for Image Super-Resolution and Deblurring"](https://arxiv.org/abs/2312.11232) by [Jérémy Scanvic](https://github.com/jscanvic), [Mike Davies](https://www.research.ed.ac.uk/en/persons/michael-davies), [Patrice Abry](http://perso.ens-lyon.fr/patrice.abry/index.html), and [Julián Tachella](https://tachella.github.io/)
 
