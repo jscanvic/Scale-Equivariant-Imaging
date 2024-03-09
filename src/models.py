@@ -5,6 +5,7 @@ from dip import DIPModel
 from pnp import PnPModel
 from bm3d_model import BM3DModel
 from imresize import imresize
+from torch.nn.parallel import DataParallel
 
 
 class Identity(Module):
@@ -20,7 +21,7 @@ class Upsample(Module):
         return imresize(y, scale=self.factor)
 
 
-def get_model(task, sr_factor=None, noise_level=None, physics=None, channels=3, device="cpu", kind="swinir"):
+def get_model(task, sr_factor=None, noise_level=None, physics=None, channels=3, device="cpu", kind="swinir", data_parallel_devices=None, dip_iterations=4000):
     """
     Get a model with randomly initialized weights for the given task
 
@@ -58,7 +59,7 @@ def get_model(task, sr_factor=None, noise_level=None, physics=None, channels=3, 
         )
     elif kind == "dip":
         img_shape = (3, 48, 48)
-        model = DIPModel(physics=physics, sr_factor=sr_factor)
+        model = DIPModel(physics=physics, sr_factor=sr_factor, iterations=dip_iterations)
     elif kind == "pnp":
         noise_level_img = noise_level / 255
         early_stop = True
@@ -78,5 +79,9 @@ def get_model(task, sr_factor=None, noise_level=None, physics=None, channels=3, 
         model = Identity()
     elif kind == "up":
         model = Upsample(factor=sr_factor)
+
+    if data_parallel_devices is not None:
+        devices = data_parallel_devices
+        model = DataParallel(model, device_ids=devices, output_device=device)
 
     return model

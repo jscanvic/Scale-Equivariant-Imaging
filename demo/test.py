@@ -19,6 +19,7 @@ np.random.seed(0)
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="div2k")
 parser.add_argument("--task", type=str)
+parser.add_argument("--sr_filter", type=str, default="bicubic")
 parser.add_argument("--sr_factor", type=int, default=None)
 parser.add_argument("--kernel", type=str, default=None)
 parser.add_argument("--noise_level", type=int)
@@ -36,6 +37,10 @@ parser.add_argument("--shift", action="store_true")
 parser.add_argument("--dataset_offset", type=int, default=None)
 parser.add_argument("--indices", type=str, default=None)
 parser.add_argument("--out_dir", type=str, default=None)
+parser.add_argument("--plot_psf", action="store_true")
+parser.add_argument("--dip_iterations", type=int, default=None)
+parser.add_argument("--noise2inverse", action="store_true")
+parser.add_argument("--print_all_metrics", action="store_true")
 args = parser.parse_args()
 
 physics = get_physics(
@@ -44,10 +49,21 @@ physics = get_physics(
     kernel_path=args.kernel,
     sr_factor=args.sr_factor,
     device=args.device,
+    sr_filter=args.sr_filter,
 )
 
 model_kind = args.model_kind
 channels = 3
+if args.dip_iterations is not None:
+    dip_iterations = args.dip_iterations
+else:
+    if args.task == "deblurring" and "Gaussian" in args.kernel:
+        dip_iterations = 4000
+    elif args.task == "deblurring":
+        dip_iterations = 1000
+    elif args.task == "sr":
+        dip_iterations = 1000
+
 model = get_model(
     args.task,
     args.sr_factor,
@@ -56,6 +72,7 @@ model = get_model(
     device=args.device,
     kind=model_kind,
     channels=channels,
+    dip_iterations=dip_iterations,
 )
 model.to(args.device)
 model.eval()
@@ -75,6 +92,7 @@ if args.weights is not None:
 
 resize = None if args.task == "sr" else 256
 force_rgb = args.dataset == "ct"
+method = "noise2inverse" if args.noise2inverse else None
 dataset = TestDataset(
     root="./datasets",
     split=args.split,
@@ -86,6 +104,7 @@ dataset = TestDataset(
     max_size=args.dataset_max_size,
     force_rgb=force_rgb,
     offset=args.dataset_offset,
+    method=method
 )
 
 psnr_sum = 0
@@ -99,6 +118,20 @@ ssim_sum_Ax = 0
 
 psnr_Ax_list = []
 ssim_Ax_list = []
+
+if args.plot_psf:
+    from deepinv.physics import Blur
+    from torchvision.utils import save_image
+
+    assert args.out_dir is not None
+    assert isinstance(physics, Blur)
+
+    psf = physics.filter
+    psf = psf[0, 0, :, :]
+    psf = psf / psf.max()
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    save_image(psf, os.path.join(args.out_dir, "psf.png"))
 
 if args.indices is not None:
     indices = [int(i) for i in args.indices.split(",")]
@@ -150,6 +183,9 @@ for i in tqdm(range(len(dataset))):
     ssim_sum += ssim_val
     psnr_list.append(psnr_val)
     ssim_list.append(ssim_val)
+
+    if args.print_all_metrics:
+        print(f"METRICS_{i}: PSNR: {psnr_val:.1f}, SSIM: {ssim_val:.3f}")
 
     if args.Ax_metrics:
         Ax = physics.A(x)

@@ -5,10 +5,11 @@ from deepinv.models import ConvDecoder, DeepImagePrior
 
 
 class DIPModel(Module):
-    def __init__(self, physics, sr_factor=None):
+    def __init__(self, physics, sr_factor=None, iterations=4000):
         super().__init__()
         self.physics = physics
         self.sr_factor = sr_factor
+        self.iterations = iterations
 
 
     def forward(self, y):
@@ -16,7 +17,6 @@ class DIPModel(Module):
         if self.sr_factor is not None:
             img_shape = (img_shape[0], int(img_shape[1] * self.sr_factor), int(img_shape[2] * self.sr_factor))
 
-        iterations = 4000
         lr = 5e-3
         channels = 32
         in_size = [16, 16]
@@ -28,9 +28,9 @@ class DIPModel(Module):
         model = DeepImagePrior(
             backbone,
             learning_rate=lr,
-            iterations=iterations,
+            iterations=self.iterations,
             input_size=[channels] + in_size,
-            verbose=True,
+            verbose=False,
         ).to(y.device)
 
         return model(y, self.physics)

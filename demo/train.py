@@ -15,6 +15,7 @@ from metrics import psnr_fn
 from models import get_model
 from training import save_training_state
 from physics import get_physics
+from torch.nn.parallel import DataParallel
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="div2k")
@@ -22,12 +23,16 @@ parser.add_argument("--method", type=str)
 parser.add_argument("--stop_gradient", action="store_true")
 parser.add_argument("--task", type=str)
 parser.add_argument("--sr_factor", type=int, default=None)
+parser.add_argument("--sr_filter", type=str, default=None)
 parser.add_argument("--kernel", type=str, default=None)
 parser.add_argument("--noise_level", type=int)
 parser.add_argument("--out_dir", type=str, default="./results")
 parser.add_argument("--device", type=str, default="cpu")
+parser.add_argument("--data_parallel_devices", type=str, default=None)
 parser.add_argument("--download", action="store_true")
 args = parser.parse_args()
+
+data_parallel_devices = args.data_parallel_devices.split(",") if args.data_parallel_devices is not None else None
 
 assert args.method in [
     "proposed",
@@ -37,6 +42,7 @@ assert args.method in [
     "ei-shift",
     "dip",
     "pnp",
+    "noise2inverse",
 ], "Unsupported training method"
 assert args.task in ["sr", "deblurring"], "Unsupported task"
 
@@ -46,12 +52,18 @@ physics = get_physics(
     kernel_path=args.kernel,
     sr_factor=args.sr_factor,
     device=args.device,
+    sr_filter=args.sr_filter,
 )
 
 channels = 3
 model = get_model(
-    args.task, args.sr_factor, physics=physics, device=args.device, kind="swinir",
-    channels=channels
+    args.task,
+    args.sr_factor,
+    physics=physics,
+    device=args.device,
+    kind="swinir",
+    channels=channels,
+    data_parallel_devices=data_parallel_devices,
 )
 model.to(args.device)
 model.train()
@@ -69,6 +81,7 @@ training_dataset = TrainingDataset(
     device=args.device,
     dataset=args.dataset,
     force_rgb=force_rgb,
+    method=args.method,
 )
 eval_dataset = EvalDataset(
     dataset_root,
@@ -77,7 +90,8 @@ eval_dataset = EvalDataset(
     download=args.download,
     device=args.device,
     dataset=args.dataset,
-    force_rgb=force_rgb
+    force_rgb=force_rgb,
+    method=args.method,
 )
 
 losses = get_losses(args.method, args.noise_level, args.stop_gradient)
@@ -182,4 +196,8 @@ for epoch in range(epochs):
 
 # save the weights after training completion
 weights_path = f"{args.out_dir}/weights.pt"
-torch.save(model.state_dict(), weights_path)
+if not isinstance(model, DataParallel):
+    model_state_dict = model.state_dict()
+else:
+    model_state_dict = model.module.state_dict()
+torch.save(model_state_dict, weights_path)

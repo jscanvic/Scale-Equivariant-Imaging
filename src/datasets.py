@@ -7,6 +7,7 @@ from torchvision.datasets.utils import download_and_extract_archive
 from torchvision.transforms import InterpolationMode, functional as TF
 from torchvision.transforms.functional import to_tensor
 from deepinv.datasets import HDF5Dataset
+from noise2inverse import n2i_pair
 
 
 def minsize_pad(x, size, padding_mode="constant", fill=0):
@@ -136,7 +137,7 @@ class TrainingDataset(Dataset):
     :param str device: device to use
     """
 
-    def __init__(self, root, physics, resize, css=False, download=False, device="cpu", dataset="div2k", force_rgb=False):
+    def __init__(self, root, physics, resize, css=False, download=False, device="cpu", dataset="div2k", force_rgb=False, method=None):
         super().__init__()
         self.root = root
         self.physics = physics
@@ -144,6 +145,7 @@ class TrainingDataset(Dataset):
         self.css = css
         self.device = device
         self.force_rgb = force_rgb
+        self.method = method
 
         assert dataset in ["div2k", "urban100", "ct"]
         self.dataset = dataset
@@ -158,6 +160,12 @@ class TrainingDataset(Dataset):
             x = self.physics(x.unsqueeze(0)).squeeze(0)
 
         y = self.physics(x.unsqueeze(0)).squeeze(0)
+
+        if self.method == "noise2inverse":
+            x, y = n2i_pair(y.unsqueeze(0), self.physics)
+            x = x.squeeze(0)
+            y = y.squeeze(0)
+
         x_patch, y_patch = get_random_patch_pair(x, y)
         return x_patch, y_patch
 
@@ -183,7 +191,15 @@ class EvalDataset(Dataset):
     :param str device: device to use
     """
 
-    def __init__(self, root, physics, resize, download=False, device="cpu", dataset="div2k", force_rgb=False):
+    def __init__(self,
+                 root,
+                 physics,
+                 resize,
+                 download=False,
+                 device="cpu",
+                 dataset="div2k",
+                 force_rgb=False,
+                 method=None):
         super().__init__()
         self.root = root
         self.physics = physics
@@ -191,6 +207,7 @@ class EvalDataset(Dataset):
         self.device = device
         self.dataset = dataset
         self.force_rgb = force_rgb
+        self.method = method
 
         if download:
             download_div2k(self.root, dataset=self.dataset)
@@ -198,6 +215,12 @@ class EvalDataset(Dataset):
     def __getitem__(self, index):
         x = load_image(index, "val", self.root, self.resize, self.device, dataset=self.dataset, force_rgb=self.force_rgb)
         y = self.physics(x.unsqueeze(0)).squeeze(0)
+
+        if self.method == "noise2inverse":
+            x, y = n2i_pair(y.unsqueeze(0), self.physics)
+            x = x.squeeze(0)
+            y = y.squeeze(0)
+
         x_patch, y_patch = get_center_patch_pair(x, y)
         return x_patch, y_patch
 
@@ -229,6 +252,7 @@ class TestDataset(Dataset):
         max_size=None,
         force_rgb=False,
         offset=None,
+        method=None,
     ):
         self.resize = resize
         self.split = split
@@ -239,6 +263,7 @@ class TestDataset(Dataset):
         self.max_size = max_size
         self.force_rgb = force_rgb
         self.offset = offset
+        self.method = method
 
         if download:
             download_div2k(self.root, dataset=self.dataset)
@@ -251,17 +276,27 @@ class TestDataset(Dataset):
         torch.manual_seed(0)
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
+        # bug fix: make y have even height and width
+        if self.method == "noise2inverse":
+            w = 2 * (y.shape[1] // 2)
+            h = 2 * (y.shape[2] // 2)
+            y = y[:, :w, :h]
+
         # crop x to make its dimensions be a multiple of u's dimensions
         if x.shape != y.shape:
             h, w = y.shape[1], y.shape[2]
             f = int(ceil(x.shape[1] / y.shape[1]))
             x = TF.crop(x, top=0, left=0, height=h * f, width=w * f)
 
+        if self.method == "noise2inverse":
+            _, y = n2i_pair(y.unsqueeze(0), self.physics)
+            y = y.squeeze(0)
+
         return x, y
 
     def __len__(self):
         if self.dataset == "div2k":
-            max_size = 10 if self.max_size is None else self.max_size
+            max_size = 100 if self.max_size is None else self.max_size
             if self.split == "train":
                 size = min(800, max_size)
             elif self.split == "val":

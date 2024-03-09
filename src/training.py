@@ -1,6 +1,7 @@
 import os
 
 import torch
+from torch.nn.parallel import DataParallel
 
 
 def save_training_state(epoch, model, optimizer, scheduler, state_path):
@@ -16,11 +17,16 @@ def save_training_state(epoch, model, optimizer, scheduler, state_path):
     save_dir = os.path.dirname(state_path)
     os.makedirs(save_dir, exist_ok=True)
 
+    if not isinstance(model, torch.nn.DataParallel):
+        model_state_dict = model.state_dict()
+    else:
+        model_state_dict = model.module.state_dict()
+
     print(f"writing the training state to the file {state_path}")
     torch.save(
         {
             "epoch": epoch,
-            "params": model.state_dict(),
+            "params": model_state_dict,
             "optimizer": optimizer.state_dict(),
             "scheduler": scheduler.state_dict(),
         },
