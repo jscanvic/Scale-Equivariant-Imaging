@@ -4,11 +4,11 @@ import torch
 from torch.nn import Module
 import numpy as np
 
-class BM3DModel(Module):
+class BM3D(Module):
     def __init__(self, physics, sigma_psd):
         super().__init__()
         self.sigma_psd = sigma_psd
-        self.kernel = physics.filter
+        self.kernel = physics.filter_fn
 
 
     def forward(self, y):

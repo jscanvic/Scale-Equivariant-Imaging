@@ -1,24 +1,11 @@
 from deepinv.models import SwinIR
 from torch import nn
-from torch.nn import Module
-from dip import DIPModel
+from dip import DeepImagePrior
+from models.identity import Identity
+from models.upsample import Upsample
 from pnp import PnPModel
-from bm3d_model import BM3DModel
-from imresize import imresize
 from torch.nn.parallel import DataParallel
-
-
-class Identity(Module):
-    def forward(self, y):
-        return y
-
-class Upsample(Module):
-    def __init__(self, factor=2):
-        super().__init__()
-        self.factor = factor
-
-    def forward(self, y):
-        return imresize(y, scale=self.factor)
+from .bm3d_deblurring import BM3D
 
 
 def get_model(task, sr_factor=None, noise_level=None, physics=None, channels=3, device="cpu", kind="swinir", data_parallel_devices=None, dip_iterations=4000):
@@ -58,23 +45,20 @@ def get_model(task, sr_factor=None, noise_level=None, physics=None, channels=3, 
             pretrained=None,
         )
     elif kind == "dip":
-        img_shape = (3, 48, 48)
-        model = DIPModel(physics=physics, sr_factor=sr_factor, iterations=dip_iterations)
+        model = DeepImagePrior(physics=physics, sr_factor=sr_factor, iterations=dip_iterations)
     elif kind == "pnp":
         noise_level_img = noise_level / 255
         early_stop = True
-        max_iter = 100
 
         model = PnPModel(
             physics,
             noise_level_img,
             early_stop=early_stop,
-            max_iter=max_iter,
             device=device,
             channels=channels,
         )
     elif kind == "bm3d":
-        model = BM3DModel(physics=physics, sigma_psd=noise_level / 255)
+        model = BM3D(physics=physics, sigma_psd=noise_level / 255)
     elif kind == "id":
         model = Identity()
     elif kind == "up":

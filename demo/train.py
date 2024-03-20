@@ -1,4 +1,5 @@
-# the library needs to be loaded early on to avoid a bug
+# the library needs to be loaded early on to prevent a crash
+# noinspection PyUnresolvedReferences
 import bm3d
 
 import argparse
@@ -16,16 +17,18 @@ from models import get_model
 from training import save_training_state
 from physics import get_physics
 from torch.nn.parallel import DataParallel
+from noise2inverse import Noise2InverseModel
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="div2k")
 parser.add_argument("--method", type=str)
-parser.add_argument("--stop_gradient", action="store_true")
+parser.add_argument("--ei_gradient", type=str, default=None)
 parser.add_argument("--task", type=str)
 parser.add_argument("--sr_factor", type=int, default=None)
-parser.add_argument("--sr_filter", type=str, default=None)
+parser.add_argument("--sr_filter", type=str, default="bicubic")
 parser.add_argument("--kernel", type=str, default=None)
 parser.add_argument("--noise_level", type=int)
+parser.add_argument("--resize_gt", type=int, default=None)
 parser.add_argument("--out_dir", type=str, default="./results")
 parser.add_argument("--device", type=str, default="cpu")
 parser.add_argument("--data_parallel_devices", type=str, default=None)
@@ -40,8 +43,6 @@ assert args.method in [
     "css",
     "ei-rotate",
     "ei-shift",
-    "dip",
-    "pnp",
     "noise2inverse",
 ], "Unsupported training method"
 assert args.task in ["sr", "deblurring"], "Unsupported task"
@@ -71,6 +72,8 @@ model.train()
 dataset_root = "./datasets"
 css = args.method == "css"
 resize = None if args.sr_factor == "sr" else 256
+if args.resize_gt is not None:
+    resize = args.resize_gt
 force_rgb = args.dataset == "ct"
 training_dataset = TrainingDataset(
     dataset_root,
@@ -94,7 +97,15 @@ eval_dataset = EvalDataset(
     method=args.method,
 )
 
-losses = get_losses(args.method, args.noise_level, args.stop_gradient)
+assert args.ei_gradient in [None, "stop", "no-stop"], "Unsupported value"
+if args.ei_gradient is None:
+    stop_gradient = True
+elif args.ei_gradient == "stop":
+    stop_gradient = True
+elif args.ei_gradient == "no-stop":
+    stop_gradient = False
+
+losses = get_losses(args.method, args.noise_level, stop_gradient)
 
 batch_size = 16 if args.task == "sr" else 8
 training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
@@ -158,7 +169,12 @@ for epoch in range(epochs):
             y = y.to(args.device)
 
             with torch.no_grad():
-                x_hat = model(y)
+                if args.method != "noise2inverse":
+                    x_hat = model(y)
+                else:
+                    model = Noise2InverseModel(model, physics)
+                    x_hat = model(y)
+                    model = model.backbone
 
             cur_psnr = psnr_fn(x_hat, x)
             psnr_meter.update(cur_psnr.item())

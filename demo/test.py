@@ -1,4 +1,5 @@
-# the library needs to be loaded early on to avoid a bug
+# the library needs to be loaded early on to prevent a crash
+# noinspection PyUnresolvedReferences
 import bm3d
 
 import argparse
@@ -32,15 +33,14 @@ parser.add_argument("--Ax_metrics", action="store_true")
 parser.add_argument("--dataset_max_size", type=int, default=None)
 parser.add_argument("--save_images", action="store_true")
 parser.add_argument("--all_images", action="store_true")
-parser.add_argument("--filter_outliers", action="store_true")
-parser.add_argument("--shift", action="store_true")
 parser.add_argument("--dataset_offset", type=int, default=None)
 parser.add_argument("--indices", type=str, default=None)
 parser.add_argument("--out_dir", type=str, default=None)
-parser.add_argument("--plot_psf", action="store_true")
+parser.add_argument("--save_psf", action="store_true")
 parser.add_argument("--dip_iterations", type=int, default=None)
 parser.add_argument("--noise2inverse", action="store_true")
 parser.add_argument("--print_all_metrics", action="store_true")
+parser.add_argument("--resize_gt", type=int, default=None)
 args = parser.parse_args()
 
 physics = get_physics(
@@ -90,9 +90,20 @@ if args.weights is not None:
 
     model.load_state_dict(weights)
 
-resize = None if args.task == "sr" else 256
-force_rgb = args.dataset == "ct"
-method = "noise2inverse" if args.noise2inverse else None
+resize = None
+if args.task == "deblurring":
+    resize = 256
+if args.resize_gt is not None:
+    resize = args.resize_gt
+
+force_rgb = False
+if args.dataset == "ct":
+    force_rgb = True
+
+method = None
+if args.noise2inverse:
+    method = "noise2inverse"
+
 dataset = TestDataset(
     root="./datasets",
     split=args.split,
@@ -107,57 +118,36 @@ dataset = TestDataset(
     method=method
 )
 
-psnr_sum = 0
-ssim_sum = 0
-
 psnr_list = []
 ssim_list = []
-
-psnr_sum_Ax = 0
-ssim_sum_Ax = 0
 
 psnr_Ax_list = []
 ssim_Ax_list = []
 
-if args.plot_psf:
+if args.save_psf:
     from deepinv.physics import Blur
     from torchvision.utils import save_image
 
     assert args.out_dir is not None
     assert isinstance(physics, Blur)
 
-    psf = physics.filter
-    psf = psf[0, 0, :, :]
-    psf = psf / psf.max()
+    kernel = physics.filter
+    assert kernel.dim() == 4
+    kernel = kernel.squeeze(0).squeeze(0)
+    kernel = kernel / kernel.max()
 
     os.makedirs(args.out_dir, exist_ok=True)
-    save_image(psf, os.path.join(args.out_dir, "psf.png"))
-
-if args.indices is not None:
-    indices = [int(i) for i in args.indices.split(",")]
+    save_image(kernel, os.path.join(args.out_dir, "psf.png"))
 
 # testing loop
-for i in tqdm(range(len(dataset))):
-    if args.indices is not None:
-        if i not in indices:
-            continue
+if args.indices is None:
+    indices = range(len(dataset))
+else:
+    indices = (int(i) for i in args.indices.split(","))
 
+for i in tqdm(indices):
     x, y = dataset[i]
     x, y = x.unsqueeze(0), y.unsqueeze(0)
-
-    if args.shift:
-        x = torch.roll(x, shifts=1, dims=2)
-        x = torch.roll(x, shifts=1, dims=3)
-        y = torch.roll(y, shifts=1, dims=2)
-        y = torch.roll(y, shifts=1, dims=3)
-
-    if args.dataset == "ct":
-        if args.filter_outliers:
-            avg_intensity = x.mean()
-            outlier_mu = .4424
-            outlier_sigma = 0.0312
-            if abs(avg_intensity - outlier_mu) > 3 * outlier_sigma:
-                continue
 
     if args.dataset == "ct":
         assert x.shape[1] == 3
@@ -165,22 +155,22 @@ for i in tqdm(range(len(dataset))):
 
     if args.model_kind != "dip":
         with torch.no_grad():
-            x_hat = model(y)
+            if args.noise2inverse is not True:
+                x_hat = model(y)
+            else:
+                from noise2inverse import Noise2InverseModel
+                model = Noise2InverseModel(model, physics)
+                x_hat = model(y)
+                model = model.backbone
     else:
         x_hat = model(y).detach()
 
     assert x_hat.shape[1] in [1, 3]
     y_channel = True if x_hat.shape[1] == 3 else False
 
-    if args.model_kind == "swinir" and args.dataset == "ct" and x.shape[1] == 1:
-        psnr_val = psnr_fn(x_hat, x.repeat(1, 3, 1, 1), y_channel=y_channel).item()
-        ssim_val = ssim_fn(x_hat, x.repeat(1, 3, 1, 1), y_channel=y_channel).item()
-    else:
-        psnr_val = psnr_fn(x_hat, x, y_channel=y_channel).item()
-        ssim_val = ssim_fn(x_hat, x, y_channel=y_channel).item()
+    psnr_val = psnr_fn(x_hat, x, y_channel=y_channel).item()
+    ssim_val = ssim_fn(x_hat, x, y_channel=y_channel).item()
 
-    psnr_sum += psnr_val
-    ssim_sum += ssim_val
     psnr_list.append(psnr_val)
     ssim_list.append(ssim_val)
 
@@ -191,44 +181,24 @@ for i in tqdm(range(len(dataset))):
         Ax = physics.A(x)
         psnr_Ax_val = psnr_fn(Ax, x, y_channel=y_channel).item()
         ssim_Ax_val = ssim_fn(Ax, x, y_channel=y_channel).item()
-        psnr_sum_Ax += psnr_Ax_val
-        ssim_sum_Ax += ssim_Ax_val
         psnr_Ax_list.append(psnr_Ax_val)
         ssim_Ax_list.append(ssim_Ax_val)
 
     if args.save_images and (args.all_images or i < 5):
+        from torchvision.utils import save_image
+
         assert args.out_dir is not None
         os.makedirs(args.out_dir, exist_ok=True)
 
-        import cv2
-
-        x = x.squeeze(0).permute(1, 2, 0).cpu().numpy()
-        x_hat = x_hat.squeeze(0).permute(1, 2, 0).cpu().numpy()
-        y = y.squeeze(0).permute(1, 2, 0).cpu().numpy()
-
-        x = np.clip(x, 0, 1)
-        x_hat = np.clip(x_hat, 0, 1)
-        y = np.clip(y, 0, 1)
-
-        x = (x * 255).astype(np.uint8)
-        x_hat = (x_hat * 255).astype(np.uint8)
-        y = (y * 255).astype(np.uint8)
-
-        # rgb -> bgr
-        x = x[..., ::-1]
-        x_hat = x_hat[..., ::-1]
-        y = y[..., ::-1]
-
-        cv2.imwrite(os.path.join(args.out_dir, f"{i}_x.png"), x)
-        cv2.imwrite(os.path.join(args.out_dir, f"{i}_x_hat.png"), x_hat)
-        cv2.imwrite(os.path.join(args.out_dir, f"{i}_y.png"), y)
-
+        save_image(x, os.path.join(args.out_dir, f"{i}_x.png"))
+        save_image(x_hat, os.path.join(args.out_dir, f"{i}_x_hat.png"))
+        save_image(y, os.path.join(args.out_dir, f"{i}_y.png"))
 
 N = len(psnr_list)
 print(f"N: {N}")
 
-psnr_average = psnr_sum / N
-ssim_average = ssim_sum / N
+psnr_average = np.mean(psnr_list)
+ssim_average = np.mean(ssim_list)
 psnr_std = np.std(psnr_list)
 ssim_std = np.std(ssim_list)
 
@@ -238,8 +208,8 @@ print(f"SSIM: {ssim_average:.3f}")
 print(f"SSIM std: {ssim_std:.3f}")
 
 if args.Ax_metrics:
-    psnr_average_Ax = psnr_sum_Ax / N
-    ssim_average_Ax = ssim_sum_Ax / N
+    psnr_average_Ax = np.mean(psnr_Ax_list)
+    ssim_average_Ax = np.mean(ssim_Ax_list)
     psnr_std_Ax = np.std(psnr_Ax_list)
     ssim_std_Ax = np.std(ssim_Ax_list)
 

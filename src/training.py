@@ -1,7 +1,6 @@
 import os
 
 import torch
-from torch.nn.parallel import DataParallel
 
 
 def save_training_state(epoch, model, optimizer, scheduler, state_path):

@@ -1,119 +1,39 @@
-from math import ceil
-
 import torch
-from PIL import Image
+from math import ceil
 from torch.utils.data import Dataset
-from torchvision.datasets.utils import download_and_extract_archive
 from torchvision.transforms import InterpolationMode, functional as TF
-from torchvision.transforms.functional import to_tensor
-from deepinv.datasets import HDF5Dataset
+
 from noise2inverse import n2i_pair
+from physics import Blur
+from .crop import CropPair
+from .div2k import Div2K
+from .medical import MedicalDataset
+from .urban100 import Urban100
 
 
-def minsize_pad(x, size, padding_mode="constant", fill=0):
-    """Pad an image to a minimum size"""
-    h_padding = max(0, size - x.shape[1])
-    w_padding = max(0, size - x.shape[2])
-    return TF.pad(x, [0, 0, w_padding, h_padding], padding_mode=padding_mode, fill=fill)
-
-
-def get_random_patch_pair(x, y, size=48):
-    """Get a random patch pair from a pair of images"""
-    f = int(ceil(x.shape[1] / y.shape[1]))
-
-    x = minsize_pad(x, size * f)
-    y = minsize_pad(y, size)
-
-    h, w = y.shape[-2:]
-
-    i = torch.randint(0, h - size + 1, size=(1,)).item()
-    j = torch.randint(0, w - size + 1, size=(1,)).item()
-
-    x_crop = TF.crop(x, top=i * f, left=j * f, height=size * f, width=size * f)
-    y_crop = TF.crop(y, top=i, left=j, height=size, width=size)
-
-    return x_crop, y_crop
-
-
-def get_center_patch_pair(x, y, size=48):
-    """Get the center patch pair from a pair of images"""
-    f = int(ceil(x.shape[1] / y.shape[1]))
-
-    x = minsize_pad(x, size * f)
-    y = minsize_pad(y, size)
-
-    h, w = y.shape[-2:]
-
-    i = (h - size) // 2
-    j = (w - size) // 2
-
-    x_patch = TF.crop(x, top=i * f, left=j * f, height=size * f, width=size * f)
-    y_patch = TF.crop(y, top=i, left=j, height=size, width=size)
-
-    return x_patch, y_patch
-
-
-def download_div2k(root, dataset="div2k"):
+def download_dataset(datasets_dir, dataset="div2k"):
     """Download DIV2K dataset"""
     assert dataset in ["div2k", "urban100", "ct"]
     if dataset == "div2k":
-        archives = [
-            (
-                "http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_HR.zip",
-                "bdc2d9338d4e574fe81bf7d158758658",
-            ),
-            (
-                "http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_HR.zip",
-                "9fcdda83005c5e5997799b69f955ff88",
-            ),
-        ]
-        for url, md5 in archives:
-            download_and_extract_archive(url, f"{root}/DIV2K", md5=md5)
+        Div2K.download(datasets_dir)
     elif dataset == "urban100":
-        download_and_extract_archive(
-                "https://huggingface.co/datasets/eugenesiow/Urban100/resolve/main/data/Urban100_HR.tar.gz?download=true",
-                f"{root}/Urban100",
-                filename="Urban100_HR.tar.gz",
-                md5="65d9d84a34b72c6f7ca1e26a12df1e4c"
-        )
+        Urban100.download(datasets_dir)
     elif dataset == "ct":
-        download_and_extract_archive(
-                "https://huggingface.co/jtachella/equivariant_bootstrap/resolve/main/Tomography/dinv_dataset0.h5?download=true",
-                f"{root}/CT",
-                filename="dinv_dataset0.h5",
-                md5="6f1e1a4f5c0a1f0e0a4b6e6b9a8b4b4b"
-        )
+        MedicalDataset.download(datasets_dir)
 
 
-def load_image(index, split, root, resize, device="cpu", dataset="div2k", force_rgb=False):
-    """Load an image from the DIV2K dataset"""
+def load_image(index, split, datasets_dir, resize, device="cpu", dataset="div2k", force_rgb=False):
     assert dataset in ["div2k", "urban100", "ct"]
     if dataset == "div2k":
-        index = index + 1 if split == "train" else index + 801
-
-        if split == "train":
-            split_root = f"{root}/DIV2K/DIV2K_train_HR"
-        else:
-            split_root = f"{root}/DIV2K/DIV2K_valid_HR"
-
-        file_path = f"{split_root}/{index:04d}.png"
+        xs = Div2K(split, datasets_dir)
     elif dataset == "urban100":
-        index = index + 1 if split == "train" else index + 91
-        file_path = f"{root}/Urban100/Urban100_HR/img_{index:03d}.png"
-
-    if dataset in ["div2k", "urban100"]:
-        x = Image.open(file_path)
-        x = to_tensor(x)
+        xs = Urban100(split, datasets_dir)
     elif dataset == "ct":
-        is_train_split = split == "train"
-        ims = HDF5Dataset(f"{root}/CT/dinv_dataset0.h5", train=is_train_split)
-        x, _ = ims[index]
-        if force_rgb:
-            x = x.repeat(3, 1, 1)
+        channels = 3 if force_rgb else 1
+        xs = MedicalDataset(split, datasets_dir, channels=channels)
 
-
+    x = xs[index]
     x = x.to(device)
-
     if resize is not None:
         x = TF.resize(
             x,
@@ -137,7 +57,8 @@ class TrainingDataset(Dataset):
     :param str device: device to use
     """
 
-    def __init__(self, root, physics, resize, css=False, download=False, device="cpu", dataset="div2k", force_rgb=False, method=None):
+    def __init__(self, root, physics, resize, css=False, download=False, device="cpu", dataset="div2k", force_rgb=False,
+                 method=None):
         super().__init__()
         self.root = root
         self.physics = physics
@@ -151,10 +72,11 @@ class TrainingDataset(Dataset):
         self.dataset = dataset
 
         if download:
-            download_div2k(self.root, dataset=self.dataset)
+            download_dataset(self.root, dataset=self.dataset)
 
     def __getitem__(self, index):
-        x = load_image(index, "train", self.root, self.resize, self.device, dataset=self.dataset, force_rgb=self.force_rgb)
+        x = load_image(index, "train", self.root, self.resize, self.device, dataset=self.dataset,
+                       force_rgb=self.force_rgb)
 
         if self.css:
             x = self.physics(x.unsqueeze(0)).squeeze(0)
@@ -166,8 +88,8 @@ class TrainingDataset(Dataset):
             x = x.squeeze(0)
             y = y.squeeze(0)
 
-        x_patch, y_patch = get_random_patch_pair(x, y)
-        return x_patch, y_patch
+        T_crop = CropPair("random", 48)
+        return T_crop(x, y)
 
     def __len__(self):
         if self.dataset == "div2k":
@@ -177,7 +99,6 @@ class TrainingDataset(Dataset):
         elif self.dataset == "ct":
             size = 4992
         return size
-
 
 
 class EvalDataset(Dataset):
@@ -210,19 +131,19 @@ class EvalDataset(Dataset):
         self.method = method
 
         if download:
-            download_div2k(self.root, dataset=self.dataset)
+            download_dataset(self.root, dataset=self.dataset)
 
     def __getitem__(self, index):
-        x = load_image(index, "val", self.root, self.resize, self.device, dataset=self.dataset, force_rgb=self.force_rgb)
+        x = load_image(index, "val", self.root, self.resize, self.device, dataset=self.dataset,
+                       force_rgb=self.force_rgb)
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
-        if self.method == "noise2inverse":
-            x, y = n2i_pair(y.unsqueeze(0), self.physics)
-            x = x.squeeze(0)
+        if self.method == "noise2inverse" and False:
+            _, y = n2i_pair(y.unsqueeze(0), self.physics)
             y = y.squeeze(0)
 
-        x_patch, y_patch = get_center_patch_pair(x, y)
-        return x_patch, y_patch
+        T_crop = CropPair("center", 48)
+        return T_crop(x, y)
 
     def __len__(self):
         return 10
@@ -241,18 +162,18 @@ class TestDataset(Dataset):
     """
 
     def __init__(
-        self,
-        root,
-        split,
-        physics,
-        resize=None,
-        device="cpu",
-        download=False,
-        dataset="div2k",
-        max_size=None,
-        force_rgb=False,
-        offset=None,
-        method=None,
+            self,
+            root,
+            split,
+            physics,
+            resize=None,
+            device="cpu",
+            download=False,
+            dataset="div2k",
+            max_size=None,
+            force_rgb=False,
+            offset=None,
+            method=None,
     ):
         self.resize = resize
         self.split = split
@@ -266,18 +187,19 @@ class TestDataset(Dataset):
         self.method = method
 
         if download:
-            download_div2k(self.root, dataset=self.dataset)
+            download_dataset(self.root, dataset=self.dataset)
 
     def __getitem__(self, index):
         if self.offset is not None:
             index += self.offset
-        x = load_image(index, self.split, self.root, self.resize, self.device, dataset=self.dataset, force_rgb=self.force_rgb)
+        x = load_image(index, self.split, self.root, self.resize, self.device, dataset=self.dataset,
+                       force_rgb=self.force_rgb)
 
         torch.manual_seed(0)
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
         # bug fix: make y have even height and width
-        if self.method == "noise2inverse":
+        if isinstance(self.physics, Blur) and self.method == "noise2inverse":
             w = 2 * (y.shape[1] // 2)
             h = 2 * (y.shape[2] // 2)
             y = y[:, :w, :h]
@@ -288,7 +210,7 @@ class TestDataset(Dataset):
             f = int(ceil(x.shape[1] / y.shape[1]))
             x = TF.crop(x, top=0, left=0, height=h * f, width=w * f)
 
-        if self.method == "noise2inverse":
+        if self.method == "noise2inverse" and False:
             _, y = n2i_pair(y.unsqueeze(0), self.physics)
             y = y.squeeze(0)
 

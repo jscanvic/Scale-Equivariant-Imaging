@@ -14,7 +14,6 @@ class PnPModel(Module):
         physics,
         noise_level_img,
         early_stop=False,
-        max_iter=100,
         channels=3,
         device="cpu",
     ):
