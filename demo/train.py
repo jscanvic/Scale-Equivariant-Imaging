@@ -25,14 +25,17 @@ parser.add_argument("--method", type=str)
 parser.add_argument("--ei_gradient", type=str, default=None)
 parser.add_argument("--task", type=str)
 parser.add_argument("--sr_factor", type=int, default=None)
-parser.add_argument("--sr_filter", type=str, default="bicubic")
+parser.add_argument("--sr_filter", type=str, default="bicubic_torch")
 parser.add_argument("--kernel", type=str, default=None)
 parser.add_argument("--noise_level", type=int)
 parser.add_argument("--resize_gt", type=int, default=None)
+parser.add_argument("--no_resize", action="store_true")
 parser.add_argument("--out_dir", type=str, default="./results")
 parser.add_argument("--device", type=str, default="cpu")
 parser.add_argument("--data_parallel_devices", type=str, default=None)
+parser.add_argument("--batch_size", type=int, default=None)
 parser.add_argument("--download", action="store_true")
+parser.add_argument("--sure_alternative", type=str, default=None)
 args = parser.parse_args()
 
 data_parallel_devices = args.data_parallel_devices.split(",") if args.data_parallel_devices is not None else None
@@ -71,8 +74,10 @@ model.train()
 
 dataset_root = "./datasets"
 css = args.method == "css"
-resize = None if args.sr_factor == "sr" else 256
-if args.resize_gt is not None:
+resize = 256
+if args.no_resize:
+    resize = None
+elif args.resize_gt is not None:
     resize = args.resize_gt
 force_rgb = args.dataset == "ct"
 training_dataset = TrainingDataset(
@@ -105,13 +110,16 @@ elif args.ei_gradient == "stop":
 elif args.ei_gradient == "no-stop":
     stop_gradient = False
 
-losses = get_losses(args.method, args.noise_level, stop_gradient)
+losses = get_losses(args.method, args.noise_level, stop_gradient, sure_alternative=args.sure_alternative)
 
-batch_size = 16 if args.task == "sr" else 8
+if args.batch_size is not None:
+    batch_size = args.batch_size
+else:
+    batch_size = 8
 training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
 eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=False)
 
-lr = 2e-4 if args.task == "sr" else 5e-4
+lr = 2e-4 if args.task == "nr" else 5e-4
 optimizer = Adam(model.parameters(), lr=lr, betas=(0.9, 0.99))
 scheduler = MultiStepLR(optimizer, milestones=[250, 400, 450, 475], gamma=0.5)
 

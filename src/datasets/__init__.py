@@ -1,13 +1,12 @@
 import torch
-from math import ceil
 from torch.utils.data import Dataset
 from torchvision.transforms import InterpolationMode, functional as TF
 
-from noise2inverse import n2i_pair
-from physics import Blur
+from noise2inverse import Noise2InverseTransform
+from physics import Blur, Downsampling
 from .crop import CropPair
 from .div2k import Div2K
-from .medical import MedicalDataset
+from .tomography import TomographyDataset
 from .urban100 import Urban100
 
 
@@ -19,7 +18,7 @@ def download_dataset(datasets_dir, dataset="div2k"):
     elif dataset == "urban100":
         Urban100.download(datasets_dir)
     elif dataset == "ct":
-        MedicalDataset.download(datasets_dir)
+        TomographyDataset.download(datasets_dir)
 
 
 def load_image(index, split, datasets_dir, resize, device="cpu", dataset="div2k", force_rgb=False):
@@ -30,7 +29,7 @@ def load_image(index, split, datasets_dir, resize, device="cpu", dataset="div2k"
         xs = Urban100(split, datasets_dir)
     elif dataset == "ct":
         channels = 3 if force_rgb else 1
-        xs = MedicalDataset(split, datasets_dir, channels=channels)
+        xs = TomographyDataset(split, datasets_dir, channels=channels)
 
     x = xs[index]
     x = x.to(device)
@@ -84,12 +83,19 @@ class TrainingDataset(Dataset):
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
         if self.method == "noise2inverse":
-            x, y = n2i_pair(y.unsqueeze(0), self.physics)
+            T_n2i = Noise2InverseTransform(self.physics)
+            x, y = T_n2i(x.unsqueeze(0), y.unsqueeze(0))
             x = x.squeeze(0)
             y = y.squeeze(0)
 
+        if isinstance(self.physics, Downsampling):
+            xy_size_ratio = self.physics.factor
+        else:
+            xy_size_ratio = 1
+
         T_crop = CropPair("random", 48)
-        return T_crop(x, y)
+        x, y = T_crop(x, y, xy_size_ratio=xy_size_ratio)
+        return x, y
 
     def __len__(self):
         if self.dataset == "div2k":
@@ -138,12 +144,14 @@ class EvalDataset(Dataset):
                        force_rgb=self.force_rgb)
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
-        if self.method == "noise2inverse" and False:
-            _, y = n2i_pair(y.unsqueeze(0), self.physics)
-            y = y.squeeze(0)
+        if isinstance(self.physics, Downsampling):
+            xy_size_ratio = self.physics.factor
+        else:
+            xy_size_ratio = 1
 
         T_crop = CropPair("center", 48)
-        return T_crop(x, y)
+        x, y = T_crop(x, y, xy_size_ratio=xy_size_ratio)
+        return x, y
 
     def __len__(self):
         return 10
@@ -207,13 +215,11 @@ class TestDataset(Dataset):
         # crop x to make its dimensions be a multiple of u's dimensions
         if x.shape != y.shape:
             h, w = y.shape[1], y.shape[2]
-            f = int(ceil(x.shape[1] / y.shape[1]))
+            if isinstance(self.physics, Downsampling):
+                f = self.physics.factor
+            else:
+                f = 1
             x = TF.crop(x, top=0, left=0, height=h * f, width=w * f)
-
-        if self.method == "noise2inverse" and False:
-            _, y = n2i_pair(y.unsqueeze(0), self.physics)
-            y = y.squeeze(0)
-
         return x, y
 
     def __len__(self):

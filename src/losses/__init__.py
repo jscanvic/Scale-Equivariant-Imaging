@@ -3,9 +3,10 @@ from deepinv.loss.metric import mse
 from deepinv.transform import Rotate, Shift
 
 from losses.ei import Scale
+from .r2r import R2RLoss
 
 
-def get_losses(method, noise_level, stop_gradient):
+def get_losses(method, noise_level, stop_gradient, sure_alternative=None):
     """
     Get the losses for a given training setting
 
@@ -13,8 +14,13 @@ def get_losses(method, noise_level, stop_gradient):
     :param float noise_level: noise level (e.g. 5)
     :param bool stop_gradient: stop the gradient for the proposed and EI methods
     """
+    assert sure_alternative in [None, "r2r"]
+
     if method == "proposed":
-        loss_names = ["sure", "ei"]
+        if sure_alternative is None:
+            loss_names = ["sure", "ei"]
+        elif sure_alternative == "r2r":
+            loss_names = ["r2r", "ei"]
         ei_transform = Scale()
     elif method == "sup":
         loss_names = ["sup"]
@@ -36,6 +42,8 @@ def get_losses(method, noise_level, stop_gradient):
             losses.append(SupLoss(metric=mse()))
         elif loss_name == "sure":
             losses.append(SureGaussianLoss(sigma=noise_level / 255))
+        elif loss_name == "r2r":
+            losses.append(R2RLoss(eta=noise_level / 255))
         elif loss_name == "ei":
             losses.append(
                 EILoss(metric=mse(), transform=ei_transform, no_grad=stop_gradient)

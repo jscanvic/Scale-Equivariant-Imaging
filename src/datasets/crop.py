@@ -12,8 +12,9 @@ class CropPair(Module):
         self.location = location
         self.size = size
 
-    def forward(self, x, y):
-        xy_size_ratio = int(ceil(x.shape[1] / y.shape[1]))
+    def forward(self, x, y, xy_size_ratio=None):
+        if xy_size_ratio is None:
+            xy_size_ratio = int(ceil(x.shape[1] / y.shape[1]))
         T_pad_x = MinSizePadding(self.size * xy_size_ratio, padding_mode="constant", fill=0)
         x = T_pad_x(x)
         T_pad_y = MinSizePadding(self.size, padding_mode="constant", fill=0)

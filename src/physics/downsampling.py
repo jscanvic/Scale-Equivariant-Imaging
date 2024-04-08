@@ -57,9 +57,11 @@ class Downsampling(LinearPhysics):
         super().__init__()
         self.factor = factor
         self.antialias = antialias
-        assert filter in ["bicubic", "kaiser"]
+        assert filter in ["bicubic", "bicubic_torch", "kaiser"]
         self.filter = filter
         if self.filter == "bicubic":
+            self.filter_fn = None
+        elif self.filter == "bicubic_torch":
             self.filter_fn = None
         elif self.filter == "kaiser":
             self.filter_fn = KaiserFilter(antialias=self.antialias)
@@ -67,6 +69,8 @@ class Downsampling(LinearPhysics):
     def A(self, x):
         if self.filter == "bicubic":
             y = imresize(x, scale=1 / self.factor, antialiasing=self.antialias)
+        elif self.filter == "bicubic_torch":
+            y = interpolate(x, scale_factor=1 / self.factor, mode="bicubic")
         elif self.filter == "kaiser":
             y = self.filter_fn(x)
             y = y[:, :, ::self.factor, ::self.factor]
@@ -75,6 +79,8 @@ class Downsampling(LinearPhysics):
     def A_adjoint(self, y):
         if self.filter == "bicubic":
             x = imresize(y, scale=self.factor)
+        elif self.filter == "bicubic_torch":
+            x = interpolate(y, scale_factor=self.factor, mode="bicubic")
         elif self.filter == "kaiser":
             x = interpolate(y, scale_factor=self.factor, mode="bicubic")
         return x

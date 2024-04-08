@@ -41,6 +41,9 @@ parser.add_argument("--dip_iterations", type=int, default=None)
 parser.add_argument("--noise2inverse", action="store_true")
 parser.add_argument("--print_all_metrics", action="store_true")
 parser.add_argument("--resize_gt", type=int, default=None)
+parser.add_argument("--no_resize", action="store_true")
+parser.add_argument("--r2r", action="store_true")
+parser.add_argument("--r2r_itercount", type=int, default=1)
 args = parser.parse_args()
 
 physics = get_physics(
@@ -90,12 +93,11 @@ if args.weights is not None:
 
     model.load_state_dict(weights)
 
-resize = None
-if args.task == "deblurring":
-    resize = 256
-if args.resize_gt is not None:
+resize = 256
+if args.no_resize:
+    resize = None
+elif args.resize_gt is not None:
     resize = args.resize_gt
-
 force_rgb = False
 if args.dataset == "ct":
     force_rgb = True
@@ -155,13 +157,21 @@ for i in tqdm(indices):
 
     if args.model_kind != "dip":
         with torch.no_grad():
-            if args.noise2inverse is not True:
-                x_hat = model(y)
-            else:
+            if args.noise2inverse:
                 from noise2inverse import Noise2InverseModel
                 model = Noise2InverseModel(model, physics)
                 x_hat = model(y)
                 model = model.backbone
+            elif args.r2r:
+                N = args.r2r_itercount
+                x_hat = torch.zeros_like(x)
+                for _ in range(N):
+                    alpha = .5
+                    pert = torch.randn_like(y) * physics.noise_model.sigma
+                    x_hat += model(y + alpha * pert)
+                x_hat /= N
+            else:
+                x_hat = model(y)
     else:
         x_hat = model(y).detach()
 
