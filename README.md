@@ -28,24 +28,23 @@ You can train a model using one of the methods used in the paper, i.e. the propo
 
 ```sh
 python demo/train.py --device cuda:0 \
- --method proposed --stop_gradient \
+ --method proposed \
  --task deblurring \
  --kernel kernels/Gaussian_R2.pt \
  --noise_level 5 --out_dir ./results \
  --download
 ```
 
-| Flag              | Explanation                                                               |
-|-------------------|---------------------------------------------------------------------------|
-| `--method`        | Training method, i.e. `proposed`, `sup`, `css`, `ei-shift` or `ei-rotate` |
-| `--stop_gradient` | Stop the gradient for proposed and equivariant imaging methods (optional) |
-| `--task`          | Task, i.e. `deblurring` or `sr`                                           |
-| `--sr_factor`     | Super-resolution factor, i.e. `2` or `4` (optional)                       |
-| `--kernel`        | Path to the blurring kernel (optional)                                    |
-| `--noise_level`   | Noise level, e.g. `5`                                                     |
-| `--out_dir`       | Directory where weights and checkpoints should be written                 |
-| `--device`        | PyTorch device, e.g. `cpu` (default) or `cuda:0`                          |
-| `--download`      | Download the dataset                                                      |
+| Flag            | Explanation                                                               |
+|-----------------|---------------------------------------------------------------------------|
+| `--method`      | Training method, i.e. `proposed`, `sup`, `css`, `ei-shift` or `ei-rotate` |
+| `--task`        | Task, i.e. `deblurring` or `sr`                                           |
+| `--sr_factor`   | Super-resolution factor, i.e. `2` or `4` (optional)                       |
+| `--kernel`      | Path to the blurring kernel (optional)                                    |
+| `--noise_level` | Noise level, e.g. `5`                                                     |
+| `--out_dir`     | Directory where weights and checkpoints should be written                 |
+| `--device`      | PyTorch device, e.g. `cpu` (default) or `cuda:0`                          |
+| `--download`    | Download the dataset                                                      |
 
 ## Testing a model
 

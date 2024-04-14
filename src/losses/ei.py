@@ -28,19 +28,19 @@ class Scale(Module):
     :param str mode: interpolation mode for grid sampling
     """
 
-    def __init__(self, factors=None, padding_mode="reflection", mode="bicubic"):
+    def __init__(self, factors=None, padding_mode="reflection", mode="bicubic", antialias=False):
         super().__init__()
 
         self.factors = factors or [0.75, 0.5]
         self.padding_mode = padding_mode
         self.mode = mode
+        self.antialias = antialias
 
     def forward(self, x):
         b, _, h, w = x.shape
 
         # Sample a random scale factor for each batch element
         factor = sample_from(self.factors, shape=(b,), device=x.device)
-        factor = factor.view(b, 1, 1, 1).repeat(1, 1, 1, 2)
 
         # Sample a random transformation center for each batch element
         # with coordinates in [-1, 1]
@@ -56,8 +56,25 @@ class Scale(Module):
         U, V = torch.meshgrid(u, v)
         grid = torch.stack([V, U], dim=-1)
         grid = grid.view(1, h, w, 2).repeat(b, 1, 1, 1)
-        grid = 1 / factor * (grid - center) + center
+        grid = 1 / factor.view(b, 1, 1, 1).expand_as(grid) * (grid - center) + center
 
-        return F.grid_sample(
-            x, grid, mode=self.mode, padding_mode=self.padding_mode, align_corners=True
-        )
+        if self.antialias:
+            xs = []
+            for i in range(x.shape[0]):
+                # Apply the anti-aliasing filter
+                z = F.interpolate(x[i:i+1, :, :, :],
+                                  scale_factor=factor[i].item(),
+                                  mode=self.mode,
+                                  antialias=True)
+                z = F.grid_sample(
+                        z, grid[i:i+1], mode=self.mode, padding_mode=self.padding_mode, align_corners=True
+                )
+                z = z.squeeze(0)
+                xs.append(z)
+            x = torch.stack(xs)
+        else:
+            x = F.grid_sample(
+                x, grid, mode=self.mode, padding_mode=self.padding_mode, align_corners=True
+            )
+
+        return x

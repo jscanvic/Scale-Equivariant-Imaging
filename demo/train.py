@@ -22,6 +22,7 @@ from noise2inverse import Noise2InverseModel
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="div2k")
 parser.add_argument("--method", type=str)
+parser.add_argument("--scale_transforms_antialias", action="store_true")
 parser.add_argument("--ei_gradient", type=str, default=None)
 parser.add_argument("--task", type=str)
 parser.add_argument("--sr_factor", type=int, default=None)
@@ -110,7 +111,11 @@ elif args.ei_gradient == "stop":
 elif args.ei_gradient == "no-stop":
     stop_gradient = False
 
-losses = get_losses(args.method, args.noise_level, stop_gradient, sure_alternative=args.sure_alternative)
+losses = get_losses(args.method,
+                    args.noise_level,
+                    stop_gradient,
+                    sure_alternative=args.sure_alternative,
+                    scale_antialias=args.scale_transforms_antialias)
 
 if args.batch_size is not None:
     batch_size = args.batch_size

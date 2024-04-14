@@ -6,7 +6,7 @@ from losses.ei import Scale
 from .r2r import R2RLoss
 
 
-def get_losses(method, noise_level, stop_gradient, sure_alternative=None):
+def get_losses(method, noise_level, stop_gradient, sure_alternative=None, scale_antialias=False):
     """
     Get the losses for a given training setting
 
@@ -21,7 +21,7 @@ def get_losses(method, noise_level, stop_gradient, sure_alternative=None):
             loss_names = ["sure", "ei"]
         elif sure_alternative == "r2r":
             loss_names = ["r2r", "ei"]
-        ei_transform = Scale()
+        ei_transform = Scale(antialias=scale_antialias)
     elif method == "sup":
         loss_names = ["sup"]
     elif method == "css":
