@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 from torchvision.transforms import InterpolationMode, functional as TF
+from functools import wraps
 
 from noise2inverse import Noise2InverseTransform
 from physics import Blur, Downsampling
@@ -20,8 +21,29 @@ def download_dataset(datasets_dir, dataset="div2k"):
     elif dataset == "ct":
         TomographyDataset.download(datasets_dir)
 
+@staticmethod
+def _memoize_load_image(f):
+    cache = {}
 
-def load_image(index, split, datasets_dir, resize, device="cpu", dataset="div2k", force_rgb=False):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not kwargs["memoize"]:
+            x = f(*args, **kwargs)
+        else:
+            key = (args, frozenset(kwargs.items()))
+            if key not in cache:
+                x = f(*args, **kwargs)
+                device = x.device
+                x = x.to("cpu")
+                cache[key] = (device, x)
+            device, x = cache[key]
+            x = x.to(device)
+        return x
+
+    return wrapper
+
+@_memoize_load_image
+def load_image(index, split, datasets_dir, resize, device="cpu", dataset="div2k", force_rgb=False, memoize=False):
     assert dataset in ["div2k", "urban100", "ct"]
     if dataset == "div2k":
         xs = Div2K(split, datasets_dir)
@@ -57,7 +79,7 @@ class TrainingDataset(Dataset):
     """
 
     def __init__(self, root, physics, resize, css=False, download=False, device="cpu", dataset="div2k", force_rgb=False,
-                 method=None):
+                 method=None, memoize_gt=False):
         super().__init__()
         self.root = root
         self.physics = physics
@@ -66,6 +88,7 @@ class TrainingDataset(Dataset):
         self.device = device
         self.force_rgb = force_rgb
         self.method = method
+        self.memoize_gt = memoize_gt
 
         assert dataset in ["div2k", "urban100", "ct"]
         self.dataset = dataset
@@ -75,7 +98,7 @@ class TrainingDataset(Dataset):
 
     def __getitem__(self, index):
         x = load_image(index, "train", self.root, self.resize, self.device, dataset=self.dataset,
-                       force_rgb=self.force_rgb)
+                       force_rgb=self.force_rgb, memoize=self.memoize_gt)
 
         if self.css:
             x = self.physics(x.unsqueeze(0)).squeeze(0)
@@ -126,7 +149,8 @@ class EvalDataset(Dataset):
                  device="cpu",
                  dataset="div2k",
                  force_rgb=False,
-                 method=None):
+                 method=None,
+                 memoize_gt=False,):
         super().__init__()
         self.root = root
         self.physics = physics
@@ -135,13 +159,14 @@ class EvalDataset(Dataset):
         self.dataset = dataset
         self.force_rgb = force_rgb
         self.method = method
+        self.memoize_gt = memoize_gt
 
         if download:
             download_dataset(self.root, dataset=self.dataset)
 
     def __getitem__(self, index):
         x = load_image(index, "val", self.root, self.resize, self.device, dataset=self.dataset,
-                       force_rgb=self.force_rgb)
+                       force_rgb=self.force_rgb, memoize=self.memoize_gt)
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
         if isinstance(self.physics, Downsampling):
@@ -182,6 +207,7 @@ class TestDataset(Dataset):
             force_rgb=False,
             offset=None,
             method=None,
+            memoize_gt=False,
     ):
         self.resize = resize
         self.split = split
@@ -193,6 +219,7 @@ class TestDataset(Dataset):
         self.force_rgb = force_rgb
         self.offset = offset
         self.method = method
+        self.memoize_gt = memoize_gt
 
         if download:
             download_dataset(self.root, dataset=self.dataset)
@@ -201,7 +228,7 @@ class TestDataset(Dataset):
         if self.offset is not None:
             index += self.offset
         x = load_image(index, self.split, self.root, self.resize, self.device, dataset=self.dataset,
-                       force_rgb=self.force_rgb)
+                       force_rgb=self.force_rgb, memoize=self.memoize_gt)
 
         torch.manual_seed(0)
         y = self.physics(x.unsqueeze(0)).squeeze(0)

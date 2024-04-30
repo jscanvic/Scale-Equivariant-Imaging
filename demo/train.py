@@ -37,6 +37,8 @@ parser.add_argument("--data_parallel_devices", type=str, default=None)
 parser.add_argument("--batch_size", type=int, default=None)
 parser.add_argument("--download", action="store_true")
 parser.add_argument("--sure_alternative", type=str, default=None)
+parser.add_argument("--epochs", type=int, default=None)
+parser.add_argument("--memoize_gt", default=True, action=argparse.BooleanOptionalAction)
 args = parser.parse_args()
 
 data_parallel_devices = args.data_parallel_devices.split(",") if args.data_parallel_devices is not None else None
@@ -91,6 +93,7 @@ training_dataset = TrainingDataset(
     dataset=args.dataset,
     force_rgb=force_rgb,
     method=args.method,
+    memoize_gt=args.memoize_gt,
 )
 eval_dataset = EvalDataset(
     dataset_root,
@@ -101,6 +104,7 @@ eval_dataset = EvalDataset(
     dataset=args.dataset,
     force_rgb=force_rgb,
     method=args.method,
+    memoize_gt=args.memoize_gt,
 )
 
 assert args.ei_gradient in [None, "stop", "no-stop"], "Unsupported value"
@@ -132,9 +136,12 @@ scheduler = MultiStepLR(optimizer, milestones=[250, 400, 450, 475], gamma=0.5)
 loss_meter = AverageMeter("Training_Loss", ":.2e")
 psnr_meter = AverageMeter("Eval_PSNR", ":.2f")
 
-epochs = 500 if args.dataset != "ct" else 100
-if args.dataset == "urban100":
-    epochs = 4000
+if args.epochs is None:
+    epochs = 500 if args.dataset != "ct" else 100
+    if args.dataset == "urban100":
+        epochs = 4000
+else:
+    epochs = args.epochs
 progress = ProgressMeter(epochs, [loss_meter, psnr_meter])
 
 # training loop
@@ -152,7 +159,10 @@ for epoch in range(epochs):
 
         optimizer.zero_grad()
 
-        x_hat = model(y)
+        if args.method == "proposed" and args.sure_alternative == "r2r":
+            x_hat = None
+        else:
+            x_hat = model(y)
 
         training_loss = 0
         for loss_fn in losses:

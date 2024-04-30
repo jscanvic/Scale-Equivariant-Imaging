@@ -25,7 +25,7 @@ parser.add_argument("--sr_factor", type=int, default=None)
 parser.add_argument("--kernel", type=str, default=None)
 parser.add_argument("--noise_level", type=int)
 parser.add_argument("--weights", type=str)
-parser.add_argument("--split", type=str)
+parser.add_argument("--split", type=str, default="val")
 parser.add_argument("--device", type=str, default="cpu")
 parser.add_argument("--download", action="store_true")
 parser.add_argument("--model_kind", type=str, default="swinir")
@@ -117,7 +117,7 @@ dataset = TestDataset(
     max_size=args.dataset_max_size,
     force_rgb=force_rgb,
     offset=args.dataset_offset,
-    method=method
+    method=method,
 )
 
 psnr_list = []

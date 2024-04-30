@@ -3,7 +3,7 @@ from deepinv.loss.metric import mse
 from deepinv.transform import Rotate, Shift
 
 from losses.ei import Scale
-from .r2r import R2RLoss
+from .r2rei import R2REILoss
 
 
 def get_losses(method, noise_level, stop_gradient, sure_alternative=None, scale_antialias=False):
@@ -20,7 +20,7 @@ def get_losses(method, noise_level, stop_gradient, sure_alternative=None, scale_
         if sure_alternative is None:
             loss_names = ["sure", "ei"]
         elif sure_alternative == "r2r":
-            loss_names = ["r2r", "ei"]
+            loss_names = ["r2rei"]
         ei_transform = Scale(antialias=scale_antialias)
     elif method == "sup":
         loss_names = ["sup"]
@@ -42,8 +42,11 @@ def get_losses(method, noise_level, stop_gradient, sure_alternative=None, scale_
             losses.append(SupLoss(metric=mse()))
         elif loss_name == "sure":
             losses.append(SureGaussianLoss(sigma=noise_level / 255))
-        elif loss_name == "r2r":
-            losses.append(R2RLoss(eta=noise_level / 255))
+        elif loss_name == "r2rei":
+            losses.append(R2REILoss(transform=ei_transform,
+                                    sigma=noise_level / 255,
+                                    no_grad=stop_gradient,
+                                    metric=mse()))
         elif loss_name == "ei":
             losses.append(
                 EILoss(metric=mse(), transform=ei_transform, no_grad=stop_gradient)
