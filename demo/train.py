@@ -23,14 +23,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="div2k")
 parser.add_argument("--method", type=str)
 parser.add_argument("--scale_transforms_antialias", action="store_true")
-parser.add_argument("--ei_gradient", type=str, default=None)
+parser.add_argument("--stop_gradient", default=True, action=argparse.BooleanOptionalAction)
 parser.add_argument("--task", type=str)
 parser.add_argument("--sr_factor", type=int, default=None)
 parser.add_argument("--sr_filter", type=str, default="bicubic_torch")
 parser.add_argument("--kernel", type=str, default=None)
 parser.add_argument("--noise_level", type=int)
-parser.add_argument("--resize_gt", type=int, default=None)
-parser.add_argument("--no_resize", action="store_true")
+parser.add_argument("--resize_gt", type=int, default=256)
+parser.add_argument("--no_resize_gt", action="store_true")
 parser.add_argument("--out_dir", type=str, default="./results")
 parser.add_argument("--device", type=str, default="cpu")
 parser.add_argument("--data_parallel_devices", type=str, default=None)
@@ -62,14 +62,12 @@ physics = get_physics(
     sr_filter=args.sr_filter,
 )
 
-channels = 3
 model = get_model(
     args.task,
     args.sr_factor,
     physics=physics,
     device=args.device,
     kind="swinir",
-    channels=channels,
     data_parallel_devices=data_parallel_devices,
 )
 model.to(args.device)
@@ -77,16 +75,13 @@ model.train()
 
 dataset_root = "./datasets"
 css = args.method == "css"
-resize = 256
-if args.no_resize:
-    resize = None
-elif args.resize_gt is not None:
-    resize = args.resize_gt
-force_rgb = args.dataset == "ct"
+resize_gt = None if args.no_resize_gt else args.resize_gt
+force_rgb = True if args.dataset == "ct" else False
+
 training_dataset = TrainingDataset(
     dataset_root,
     physics,
-    resize=resize,
+    resize=resize_gt,
     css=css,
     download=args.download,
     device=args.device,
@@ -98,7 +93,7 @@ training_dataset = TrainingDataset(
 eval_dataset = EvalDataset(
     dataset_root,
     physics,
-    resize=resize,
+    resize=resize_gt,
     download=args.download,
     device=args.device,
     dataset=args.dataset,
@@ -107,28 +102,17 @@ eval_dataset = EvalDataset(
     memoize_gt=args.memoize_gt,
 )
 
-assert args.ei_gradient in [None, "stop", "no-stop"], "Unsupported value"
-if args.ei_gradient is None:
-    stop_gradient = True
-elif args.ei_gradient == "stop":
-    stop_gradient = True
-elif args.ei_gradient == "no-stop":
-    stop_gradient = False
-
 losses = get_losses(args.method,
                     args.noise_level,
-                    stop_gradient,
+                    args.stop_gradient,
                     sure_alternative=args.sure_alternative,
                     scale_antialias=args.scale_transforms_antialias)
 
-if args.batch_size is not None:
-    batch_size = args.batch_size
-else:
-    batch_size = 8
+batch_size = args.batch_size or 8
 training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
 eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=False)
 
-lr = 2e-4 if args.task == "nr" else 5e-4
+lr = 2e-4 if args.task == "sr" else 5e-4
 optimizer = Adam(model.parameters(), lr=lr, betas=(0.9, 0.99))
 scheduler = MultiStepLR(optimizer, milestones=[250, 400, 450, 475], gamma=0.5)
 

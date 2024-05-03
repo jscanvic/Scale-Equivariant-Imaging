@@ -19,6 +19,8 @@ np.random.seed(0)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="div2k")
+parser.add_argument("--resize_gt", type=int, default=256)
+parser.add_argument("--no_resize_gt", action="store_true")
 parser.add_argument("--task", type=str)
 parser.add_argument("--sr_filter", type=str, default="bicubic_torch")
 parser.add_argument("--sr_factor", type=int, default=None)
@@ -29,7 +31,6 @@ parser.add_argument("--split", type=str, default="val")
 parser.add_argument("--device", type=str, default="cpu")
 parser.add_argument("--download", action="store_true")
 parser.add_argument("--model_kind", type=str, default="swinir")
-parser.add_argument("--Ax_metrics", action="store_true")
 parser.add_argument("--dataset_max_size", type=int, default=None)
 parser.add_argument("--save_images", action="store_true")
 parser.add_argument("--all_images", action="store_true")
@@ -40,8 +41,6 @@ parser.add_argument("--save_psf", action="store_true")
 parser.add_argument("--dip_iterations", type=int, default=None)
 parser.add_argument("--noise2inverse", action="store_true")
 parser.add_argument("--print_all_metrics", action="store_true")
-parser.add_argument("--resize_gt", type=int, default=None)
-parser.add_argument("--no_resize", action="store_true")
 parser.add_argument("--r2r", action="store_true")
 parser.add_argument("--r2r_itercount", type=int, default=1)
 args = parser.parse_args()
@@ -55,8 +54,6 @@ physics = get_physics(
     sr_filter=args.sr_filter,
 )
 
-model_kind = args.model_kind
-channels = 3
 if args.dip_iterations is not None:
     dip_iterations = args.dip_iterations
 else:
@@ -73,8 +70,7 @@ model = get_model(
     noise_level=args.noise_level,
     physics=physics,
     device=args.device,
-    kind=model_kind,
-    channels=channels,
+    kind=args.model_kind,
     dip_iterations=dip_iterations,
 )
 model.to(args.device)
@@ -93,24 +89,14 @@ if args.weights is not None:
 
     model.load_state_dict(weights)
 
-resize = 256
-if args.no_resize:
-    resize = None
-elif args.resize_gt is not None:
-    resize = args.resize_gt
-force_rgb = False
-if args.dataset == "ct":
-    force_rgb = True
-
-method = None
-if args.noise2inverse:
-    method = "noise2inverse"
-
+resize_gt = None if args.no_resize_gt else args.resize_gt
+force_rgb = True if args.dataset == "ct" else False
+method = "noise2inverse" if args.noise2inverse else None
 dataset = TestDataset(
     root="./datasets",
     split=args.split,
     physics=physics,
-    resize=resize,
+    resize=resize_gt,
     device=args.device,
     download=args.download,
     dataset=args.dataset,
@@ -122,9 +108,6 @@ dataset = TestDataset(
 
 psnr_list = []
 ssim_list = []
-
-psnr_Ax_list = []
-ssim_Ax_list = []
 
 if args.save_psf:
     from deepinv.physics import Blur
@@ -187,13 +170,6 @@ for i in tqdm(indices):
     if args.print_all_metrics:
         print(f"METRICS_{i}: PSNR: {psnr_val:.1f}, SSIM: {ssim_val:.3f}")
 
-    if args.Ax_metrics:
-        Ax = physics.A(x)
-        psnr_Ax_val = psnr_fn(Ax, x, y_channel=y_channel).item()
-        ssim_Ax_val = ssim_fn(Ax, x, y_channel=y_channel).item()
-        psnr_Ax_list.append(psnr_Ax_val)
-        ssim_Ax_list.append(ssim_Ax_val)
-
     if args.save_images and (args.all_images or i < 5):
         from torchvision.utils import save_image
 
@@ -216,15 +192,3 @@ print(f"PSNR: {psnr_average:.1f}")
 print(f"PSNR std: {psnr_std:.1f}")
 print(f"SSIM: {ssim_average:.3f}")
 print(f"SSIM std: {ssim_std:.3f}")
-
-if args.Ax_metrics:
-    psnr_average_Ax = np.mean(psnr_Ax_list)
-    ssim_average_Ax = np.mean(ssim_Ax_list)
-    psnr_std_Ax = np.std(psnr_Ax_list)
-    ssim_std_Ax = np.std(ssim_Ax_list)
-
-    print()
-    print(f"PSNR Ax: {psnr_average_Ax:.1f}")
-    print(f"PSNR Ax std: {psnr_std_Ax:.1f}")
-    print(f"SSIM Ax: {ssim_average_Ax:.3f}")
-    print(f"SSIM Ax std: {ssim_std_Ax:.3f}")
