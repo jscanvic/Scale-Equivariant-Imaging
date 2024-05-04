@@ -14,7 +14,7 @@ from datasets import TrainingDataset, EvalDataset
 from losses import get_losses
 from metrics import psnr_fn
 from models import get_model
-from training import save_training_state
+from training import save_training_state, get_model_state_dict
 from physics import get_physics
 from torch.nn.parallel import DataParallel
 from noise2inverse import Noise2InverseModel
@@ -227,8 +227,5 @@ for epoch in range(epochs):
 
 # save the weights after training completion
 weights_path = f"{args.out_dir}/weights.pt"
-if not isinstance(model, DataParallel):
-    model_state_dict = model.state_dict()
-else:
-    model_state_dict = model.module.state_dict()
+model_state_dict = get_model_state_dict(model)
 torch.save(model_state_dict, weights_path)

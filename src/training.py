@@ -3,6 +3,14 @@ import os
 import torch
 
 
+def get_model_state_dict(model):
+    if not isinstance(model, torch.nn.DataParallel):
+        model_state_dict = model.state_dict()
+    else:
+        model_state_dict = model.module.state_dict()
+    return model_state_dict
+
+
 def save_training_state(epoch, model, optimizer, scheduler, state_path):
     """
     Save the training state to a file
@@ -16,10 +24,7 @@ def save_training_state(epoch, model, optimizer, scheduler, state_path):
     save_dir = os.path.dirname(state_path)
     os.makedirs(save_dir, exist_ok=True)
 
-    if not isinstance(model, torch.nn.DataParallel):
-        model_state_dict = model.state_dict()
-    else:
-        model_state_dict = model.module.state_dict()
+    model_state_dict = get_model_state_dict(model)
 
     print(f"writing the training state to the file {state_path}")
     torch.save(
