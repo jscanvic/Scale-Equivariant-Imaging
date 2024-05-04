@@ -1,11 +1,16 @@
 from deepinv.models import SwinIR
 from torch import nn
-from models.identity import Identity
-from models.upsample import Upsample
 from torch.nn.parallel import DataParallel
+
 from .pnp import PnPModel
 from .dip import DeepImagePrior
 from .bm3d_deblurring import BM3D
+from .upsample import Upsample
+
+
+class Identity(Module):
+    def forward(self, y):
+        return y
 
 
 def get_model(
