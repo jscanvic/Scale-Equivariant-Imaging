@@ -5,7 +5,14 @@ from .ct_like_filter import CTLikeFilter
 from .downsampling import Downsampling
 
 
-def get_physics(task, noise_level, kernel_path=None, sr_factor=None, device="cpu", sr_filter="bicubic"):
+def get_physics(
+    task,
+    noise_level,
+    kernel_path=None,
+    sr_factor=None,
+    device="cpu",
+    sr_filter="bicubic",
+):
     """
     Get the forward model for the given task
 

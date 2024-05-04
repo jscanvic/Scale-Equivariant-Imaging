@@ -29,7 +29,7 @@ class KaiserFilter(Module):
         x = x.swapaxes(dim, -1)
 
         psf = torch.zeros(x.shape[-1], dtype=x.dtype, device=x.device)
-        psf[:kernel.shape[-1]] = kernel
+        psf[: kernel.shape[-1]] = kernel
         psf = torch.roll(psf, -(kernel.shape[-1] // 2), dims=-1)
 
         n = x.shape[-1]
@@ -73,7 +73,7 @@ class Downsampling(LinearPhysics):
             y = interpolate(x, scale_factor=1 / self.factor, mode="bicubic")
         elif self.filter == "kaiser":
             y = self.filter_fn(x)
-            y = y[:, :, ::self.factor, ::self.factor]
+            y = y[:, :, :: self.factor, :: self.factor]
         return y
 
     def A_adjoint(self, y):

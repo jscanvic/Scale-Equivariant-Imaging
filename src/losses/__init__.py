@@ -6,7 +6,9 @@ from losses.ei import Scale
 from .r2rei import R2REILoss
 
 
-def get_losses(method, noise_level, stop_gradient, sure_alternative=None, scale_antialias=False):
+def get_losses(
+    method, noise_level, stop_gradient, sure_alternative=None, scale_antialias=False
+):
     """
     Get the losses for a given training setting
 
@@ -43,10 +45,14 @@ def get_losses(method, noise_level, stop_gradient, sure_alternative=None, scale_
         elif loss_name == "sure":
             losses.append(SureGaussianLoss(sigma=noise_level / 255))
         elif loss_name == "r2rei":
-            losses.append(R2REILoss(transform=ei_transform,
-                                    sigma=noise_level / 255,
-                                    no_grad=stop_gradient,
-                                    metric=mse()))
+            losses.append(
+                R2REILoss(
+                    transform=ei_transform,
+                    sigma=noise_level / 255,
+                    no_grad=stop_gradient,
+                    metric=mse(),
+                )
+            )
         elif loss_name == "ei":
             losses.append(
                 EILoss(metric=mse(), transform=ei_transform, no_grad=stop_gradient)

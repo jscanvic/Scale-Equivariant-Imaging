@@ -15,7 +15,9 @@ class CropPair(Module):
     def forward(self, x, y, xy_size_ratio=None):
         if xy_size_ratio is None:
             xy_size_ratio = int(ceil(x.shape[1] / y.shape[1]))
-        T_pad_x = MinSizePadding(self.size * xy_size_ratio, padding_mode="constant", fill=0)
+        T_pad_x = MinSizePadding(
+            self.size * xy_size_ratio, padding_mode="constant", fill=0
+        )
         x = T_pad_x(x)
         T_pad_y = MinSizePadding(self.size, padding_mode="constant", fill=0)
         y = T_pad_y(y)
@@ -26,8 +28,13 @@ class CropPair(Module):
         elif self.location == "center":
             i = (h - self.size) // 2
             j = (w - self.size) // 2
-        x_crop = TF.crop(x, top=i * xy_size_ratio, left=j * xy_size_ratio, height=self.size * xy_size_ratio,
-                         width=self.size * xy_size_ratio)
+        x_crop = TF.crop(
+            x,
+            top=i * xy_size_ratio,
+            left=j * xy_size_ratio,
+            height=self.size * xy_size_ratio,
+            width=self.size * xy_size_ratio,
+        )
         y_crop = TF.crop(y, top=i, left=j, height=self.size, width=self.size)
         return x_crop, y_crop
 
@@ -42,7 +49,9 @@ class MinSizePadding(Module):
     def forward(self, x):
         h_padding = max(0, self.size - x.shape[1])
         w_padding = max(0, self.size - x.shape[2])
-        return TF.pad(x,
-                      [0, 0, w_padding, h_padding],
-                      padding_mode=self.padding_mode,
-                      fill=self.fill)
+        return TF.pad(
+            x,
+            [0, 0, w_padding, h_padding],
+            padding_mode=self.padding_mode,
+            fill=self.fill,
+        )

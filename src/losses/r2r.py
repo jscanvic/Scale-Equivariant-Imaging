@@ -10,7 +10,6 @@ class R2RLoss(nn.Module):
         self.eta = eta
         self.alpha = alpha
 
-
     def forward(self, y, physics, model, **kwargs):
         pert = torch.randn_like(y) * self.eta
 

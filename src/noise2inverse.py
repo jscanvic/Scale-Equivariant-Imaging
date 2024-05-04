@@ -33,7 +33,9 @@ class ImageSlices(Module):
 
         for j in range(self.num_splits):
             measurement_slice = torch.zeros_like(y)
-            measurement_slice[:, :, j::self.num_splits, :] = y[:, :, j::self.num_splits, :]
+            measurement_slice[:, :, j :: self.num_splits, :] = y[
+                :, :, j :: self.num_splits, :
+            ]
             measurement_slices.append(measurement_slice)
 
         return measurement_slices
@@ -48,15 +50,13 @@ class InverseFilter(Module):
 
     def forward(self, y):
         assert y.dim() == 4
-        psf = torch.zeros(
-            (y.shape[-2], y.shape[-1]),
-            device=y.device,
-            dtype=y.dtype
-        )
+        psf = torch.zeros((y.shape[-2], y.shape[-1]), device=y.device, dtype=y.dtype)
         psf[: self.kernel.shape[-2], : self.kernel.shape[-1]] = self.kernel
-        psf = torch.roll(psf,
-                         (-(self.kernel.shape[-2] // 2), -(self.kernel.shape[-1] // 2)),
-                         dims=(-2, -1))
+        psf = torch.roll(
+            psf,
+            (-(self.kernel.shape[-2] // 2), -(self.kernel.shape[-1] // 2)),
+            dims=(-2, -1),
+        )
 
         s = (y.shape[-2], y.shape[-1])
         x_hat = torch.fft.rfft2(y, dim=(-2, -1))
@@ -123,4 +123,3 @@ class Noise2InverseTransform(Module):
         tgt = torch.sum(torch.stack(targets), dim=0)
         result = tgt, inp
         return result
-

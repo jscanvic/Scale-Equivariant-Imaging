@@ -30,11 +30,13 @@ class PnPModel(Module):
 
         data_fidelity = L2()
 
-        denoiser = DRUNet(in_channels=channels,
-                          out_channels=channels,
-                          pretrained="download",
-                          train=False,
-                          device=device)
+        denoiser = DRUNet(
+            in_channels=channels,
+            out_channels=channels,
+            pretrained="download",
+            train=False,
+            device=device,
+        )
 
         prior = PnP(denoiser=denoiser)
 

@@ -28,7 +28,9 @@ class Scale(Module):
     :param str mode: interpolation mode for grid sampling
     """
 
-    def __init__(self, factors=None, padding_mode="reflection", mode="bicubic", antialias=False):
+    def __init__(
+        self, factors=None, padding_mode="reflection", mode="bicubic", antialias=False
+    ):
         super().__init__()
 
         self.factors = factors or [0.75, 0.5]
@@ -62,19 +64,29 @@ class Scale(Module):
             xs = []
             for i in range(x.shape[0]):
                 # Apply the anti-aliasing filter
-                z = F.interpolate(x[i:i+1, :, :, :],
-                                  scale_factor=factor[i].item(),
-                                  mode=self.mode,
-                                  antialias=True)
+                z = F.interpolate(
+                    x[i : i + 1, :, :, :],
+                    scale_factor=factor[i].item(),
+                    mode=self.mode,
+                    antialias=True,
+                )
                 z = F.grid_sample(
-                        z, grid[i:i+1], mode=self.mode, padding_mode=self.padding_mode, align_corners=True
+                    z,
+                    grid[i : i + 1],
+                    mode=self.mode,
+                    padding_mode=self.padding_mode,
+                    align_corners=True,
                 )
                 z = z.squeeze(0)
                 xs.append(z)
             x = torch.stack(xs)
         else:
             x = F.grid_sample(
-                x, grid, mode=self.mode, padding_mode=self.padding_mode, align_corners=True
+                x,
+                grid,
+                mode=self.mode,
+                padding_mode=self.padding_mode,
+                align_corners=True,
             )
 
         return x

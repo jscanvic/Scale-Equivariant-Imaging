@@ -23,7 +23,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="div2k")
 parser.add_argument("--method", type=str)
 parser.add_argument("--scale_transforms_antialias", action="store_true")
-parser.add_argument("--stop_gradient", default=True, action=argparse.BooleanOptionalAction)
+parser.add_argument(
+    "--stop_gradient", default=True, action=argparse.BooleanOptionalAction
+)
 parser.add_argument("--task", type=str)
 parser.add_argument("--sr_factor", type=int, default=None)
 parser.add_argument("--sr_filter", type=str, default="bicubic_torch")
@@ -41,7 +43,11 @@ parser.add_argument("--epochs", type=int, default=None)
 parser.add_argument("--memoize_gt", default=True, action=argparse.BooleanOptionalAction)
 args = parser.parse_args()
 
-data_parallel_devices = args.data_parallel_devices.split(",") if args.data_parallel_devices is not None else None
+data_parallel_devices = (
+    args.data_parallel_devices.split(",")
+    if args.data_parallel_devices is not None
+    else None
+)
 
 assert args.method in [
     "proposed",
@@ -102,11 +108,13 @@ eval_dataset = EvalDataset(
     memoize_gt=args.memoize_gt,
 )
 
-losses = get_losses(args.method,
-                    args.noise_level,
-                    args.stop_gradient,
-                    sure_alternative=args.sure_alternative,
-                    scale_antialias=args.scale_transforms_antialias)
+losses = get_losses(
+    args.method,
+    args.noise_level,
+    args.stop_gradient,
+    sure_alternative=args.sure_alternative,
+    scale_antialias=args.scale_transforms_antialias,
+)
 
 batch_size = args.batch_size or 8
 training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)

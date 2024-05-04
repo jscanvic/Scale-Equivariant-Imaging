@@ -142,6 +142,7 @@ for i in tqdm(indices):
         with torch.no_grad():
             if args.noise2inverse:
                 from noise2inverse import Noise2InverseModel
+
                 model = Noise2InverseModel(model, physics)
                 x_hat = model(y)
                 model = model.backbone
@@ -149,7 +150,7 @@ for i in tqdm(indices):
                 N = args.r2r_itercount
                 x_hat = torch.zeros_like(x)
                 for _ in range(N):
-                    alpha = .5
+                    alpha = 0.5
                     pert = torch.randn_like(y) * physics.noise_model.sigma
                     x_hat += model(y + alpha * pert)
                 x_hat /= N

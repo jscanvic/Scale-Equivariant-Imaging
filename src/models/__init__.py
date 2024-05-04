@@ -8,7 +8,17 @@ from .dip import DeepImagePrior
 from .bm3d_deblurring import BM3D
 
 
-def get_model(task, sr_factor=None, noise_level=None, physics=None, channels=3, device="cpu", kind="swinir", data_parallel_devices=None, dip_iterations=4000):
+def get_model(
+    task,
+    sr_factor=None,
+    noise_level=None,
+    physics=None,
+    channels=3,
+    device="cpu",
+    kind="swinir",
+    data_parallel_devices=None,
+    dip_iterations=4000,
+):
     """
     Get a model with randomly initialized weights for the given task
 
@@ -45,7 +55,9 @@ def get_model(task, sr_factor=None, noise_level=None, physics=None, channels=3, 
             pretrained=None,
         )
     elif kind == "dip":
-        model = DeepImagePrior(physics=physics, sr_factor=sr_factor, iterations=dip_iterations)
+        model = DeepImagePrior(
+            physics=physics, sr_factor=sr_factor, iterations=dip_iterations
+        )
     elif kind == "pnp":
         noise_level_img = noise_level / 255
         early_stop = True

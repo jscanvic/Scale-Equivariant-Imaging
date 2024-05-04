@@ -27,7 +27,7 @@ class Div2K(Dataset):
         index = self.split_offset + index
         file_path = f"{self.split_root}/{index:04d}.png"
         x = read_image(file_path)
-        x = x.to(torch.float) / 255.
+        x = x.to(torch.float) / 255.0
         return x
 
     def __len__(self):

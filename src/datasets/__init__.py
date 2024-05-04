@@ -21,6 +21,7 @@ def download_dataset(datasets_dir, dataset="div2k"):
     elif dataset == "ct":
         TomographyDataset.download(datasets_dir)
 
+
 @staticmethod
 def _memoize_load_image(f):
     cache = {}
@@ -42,8 +43,18 @@ def _memoize_load_image(f):
 
     return wrapper
 
+
 @_memoize_load_image
-def load_image(index, split, datasets_dir, resize, device="cpu", dataset="div2k", force_rgb=False, memoize=False):
+def load_image(
+    index,
+    split,
+    datasets_dir,
+    resize,
+    device="cpu",
+    dataset="div2k",
+    force_rgb=False,
+    memoize=False,
+):
     assert dataset in ["div2k", "urban100", "ct"]
     if dataset == "div2k":
         xs = Div2K(split, datasets_dir)
@@ -78,8 +89,19 @@ class TrainingDataset(Dataset):
     :param str device: device to use
     """
 
-    def __init__(self, root, physics, resize, css=False, download=False, device="cpu", dataset="div2k", force_rgb=False,
-                 method=None, memoize_gt=False):
+    def __init__(
+        self,
+        root,
+        physics,
+        resize,
+        css=False,
+        download=False,
+        device="cpu",
+        dataset="div2k",
+        force_rgb=False,
+        method=None,
+        memoize_gt=False,
+    ):
         super().__init__()
         self.root = root
         self.physics = physics
@@ -97,8 +119,16 @@ class TrainingDataset(Dataset):
             download_dataset(self.root, dataset=self.dataset)
 
     def __getitem__(self, index):
-        x = load_image(index, "train", self.root, self.resize, self.device, dataset=self.dataset,
-                       force_rgb=self.force_rgb, memoize=self.memoize_gt)
+        x = load_image(
+            index,
+            "train",
+            self.root,
+            self.resize,
+            self.device,
+            dataset=self.dataset,
+            force_rgb=self.force_rgb,
+            memoize=self.memoize_gt,
+        )
 
         if self.css:
             x = self.physics(x.unsqueeze(0)).squeeze(0)
@@ -141,16 +171,18 @@ class EvalDataset(Dataset):
     :param str device: device to use
     """
 
-    def __init__(self,
-                 root,
-                 physics,
-                 resize,
-                 download=False,
-                 device="cpu",
-                 dataset="div2k",
-                 force_rgb=False,
-                 method=None,
-                 memoize_gt=False,):
+    def __init__(
+        self,
+        root,
+        physics,
+        resize,
+        download=False,
+        device="cpu",
+        dataset="div2k",
+        force_rgb=False,
+        method=None,
+        memoize_gt=False,
+    ):
         super().__init__()
         self.root = root
         self.physics = physics
@@ -165,8 +197,16 @@ class EvalDataset(Dataset):
             download_dataset(self.root, dataset=self.dataset)
 
     def __getitem__(self, index):
-        x = load_image(index, "val", self.root, self.resize, self.device, dataset=self.dataset,
-                       force_rgb=self.force_rgb, memoize=self.memoize_gt)
+        x = load_image(
+            index,
+            "val",
+            self.root,
+            self.resize,
+            self.device,
+            dataset=self.dataset,
+            force_rgb=self.force_rgb,
+            memoize=self.memoize_gt,
+        )
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
         if isinstance(self.physics, Downsampling):
@@ -195,19 +235,19 @@ class TestDataset(Dataset):
     """
 
     def __init__(
-            self,
-            root,
-            split,
-            physics,
-            resize=None,
-            device="cpu",
-            download=False,
-            dataset="div2k",
-            max_size=None,
-            force_rgb=False,
-            offset=None,
-            method=None,
-            memoize_gt=False,
+        self,
+        root,
+        split,
+        physics,
+        resize=None,
+        device="cpu",
+        download=False,
+        dataset="div2k",
+        max_size=None,
+        force_rgb=False,
+        offset=None,
+        method=None,
+        memoize_gt=False,
     ):
         self.resize = resize
         self.split = split
@@ -227,8 +267,16 @@ class TestDataset(Dataset):
     def __getitem__(self, index):
         if self.offset is not None:
             index += self.offset
-        x = load_image(index, self.split, self.root, self.resize, self.device, dataset=self.dataset,
-                       force_rgb=self.force_rgb, memoize=self.memoize_gt)
+        x = load_image(
+            index,
+            self.split,
+            self.root,
+            self.resize,
+            self.device,
+            dataset=self.dataset,
+            force_rgb=self.force_rgb,
+            memoize=self.memoize_gt,
+        )
 
         torch.manual_seed(0)
         y = self.physics(x.unsqueeze(0)).squeeze(0)

@@ -9,6 +9,5 @@ class Upsample(Module):
         assert interpolation_mode == "bicubic", "Only bicubic upsampling is supported"
         self.mode = interpolation_mode
 
-
     def forward(self, y):
         return interpolate(y, scale_factor=self.factor, mode=self.mode)

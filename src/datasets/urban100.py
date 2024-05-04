@@ -25,7 +25,7 @@ class Urban100(Dataset):
         index = self.split_offset + index
         file_path = f"{self.datasets_dir}/Urban100/Urban100_HR/img_{index:03d}.png"
         x = read_image(file_path)
-        x = x.to(torch.float) / 255.
+        x = x.to(torch.float) / 255.0
         return x
 
     def __len__(self):
@@ -37,5 +37,5 @@ class Urban100(Dataset):
             "https://huggingface.co/datasets/eugenesiow/Urban100/resolve/main/data/Urban100_HR.tar.gz?download=true",
             f"{datasets_dir}/Urban100",
             filename="Urban100_HR.tar.gz",
-            md5="65d9d84a34b72c6f7ca1e26a12df1e4c"
+            md5="65d9d84a34b72c6f7ca1e26a12df1e4c",
         )
