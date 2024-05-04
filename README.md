@@ -35,16 +35,18 @@ python demo/train.py --device cuda:0 \
  --download
 ```
 
-| Flag            | Explanation                                                               |
-|-----------------|---------------------------------------------------------------------------|
-| `--method`      | Training method, i.e. `proposed`, `sup`, `css`, `ei-shift` or `ei-rotate` |
-| `--task`        | Task, i.e. `deblurring` or `sr`                                           |
-| `--sr_factor`   | Super-resolution factor, i.e. `2` or `4` (optional)                       |
-| `--kernel`      | Path to the blurring kernel (optional)                                    |
-| `--noise_level` | Noise level, e.g. `5`                                                     |
-| `--out_dir`     | Directory where weights and checkpoints should be written                 |
-| `--device`      | PyTorch device, e.g. `cpu` (default) or `cuda:0`                          |
-| `--download`    | Download the dataset                                                      |
+| Flag                 | Explanation                                                               |
+|----------------------|---------------------------------------------------------------------------|
+| `--dataset`          | Training dataset, i.e. `div2k` (default), `urban100` or `ct`              |
+| `--method`           | Training method, i.e. `proposed`, `sup`, `css`, `ei-shift` or `ei-rotate` |
+| `--no-stop_gradient` | Don't stop the gradient in the equivariant loss                           |
+| `--task`             | Task, i.e. `deblurring` or `sr`                                           |
+| `--sr_factor`        | Super-resolution factor, i.e. `2` or `4` (optional)                       |
+| `--kernel`           | Kernel path for deblurring (optional)                                     |
+| `--noise_level`      | Noise level, e.g. `5`                                                     |
+| `--out_dir`          | Directory used for saving training checkpoints and final weights          |
+| `--device`           | PyTorch device, e.g. `cpu` (default) or `cuda:0`                          |
+| `--download`         | Automatically download the training dataset if needed                     |
 
 ## Testing a model
 
@@ -53,20 +55,21 @@ You can test a model with precomputed weights used in the paper, which we made a
 ```sh
 python demo/test.py --device cuda:0 --task deblurring \
  --kernel kernels/Gaussian_R2.pt --noise_level 5 \
- --split val --weights Deblurring_Gaussian_R2_Noise5_Proposed \
+ --weights Deblurring_Gaussian_R2_Noise5_Proposed \
  --download
 ```
 
 | Flag            | Explanation                                                                                                                                                                                   |
 |-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--dataset`     | Test dataset, i.e. `div2k` (default), `urban100` or `ct`                                                                                                                                      |
 | `--task`        | Task, i.e. `deblurring` or `sr`                                                                                                                                                               |
 | `--sr_factor`   | Super-resolution factor, i.e. `2` or `4` (optional)                                                                                                                                           |
-| `--kernel`      | Path to the blurring kernel (optional)                                                                                                                                                        |
+| `--kernel`      | Kernel path for deblurring (optional)                                                                                                                                                         |
 | `--noise_level` | Noise level, e.g. `5`                                                                                                                                                                         |
+| `--model_kind`  | Kind of algorithm used for reconstruction, i.e. `swinir` (default), `dip`, `pnp`, `bm3d`, `up` or `id`                                                                                        |
 | `--weights`     | Path to the weights or name of a pretrained model, e.g. `Deblurring_Gaussian_R2_Noise5_Proposed` (See [Hugging Face 🤗](https://huggingface.co/jscanvic/scale-equivariant-imaging/tree/main)) |
-| `--split`       | Dataset split, i.e. `train` or `val`                                                                                                                                                          |
 | `--device`      | PyTorch device, e.g. `cpu` (default) or `cuda:0`                                                                                                                                              |
-| `--download`    | Download the dataset                                                                                                                                                                          |
+| `--download`    | Automatically download the test dataset if needed                                                                                                                                             |
 
 ## Citation
 
