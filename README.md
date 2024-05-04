@@ -8,7 +8,7 @@ The implementation of ["Self-Supervised Learning for Image Super-Resolution and 
 
 Sample reconstructions for Gaussian deblurring with different standard deviations, using the proposed self-supervised method, a supervised method, and another self-supervised method (CSS)
 
-![Comparison of our self-supervised method with a supervised method and another self-supervised method (CSS) on Gaussian deblurring for different standard deviations $R_\{text{blur}}$](./images/results.png)
+<img src="./images/results.png" alt="Comparison of our self-supervised method with a supervised method and another self-supervised method (CSS) on Gaussian deblurring for different standard deviations $R_\{text{blur}}$" width="100%">
 
 ## Getting Started
 
