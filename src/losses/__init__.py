@@ -3,7 +3,7 @@ from deepinv.loss.metric import mse
 from deepinv.transform import Rotate, Shift
 
 from losses.ei import Scale
-from .r2rei import R2REILoss
+from .r2r import R2REILoss
 
 
 def get_losses(
