@@ -1,6 +1,7 @@
 from deepinv.models import SwinIR
 from torch import nn
 from torch.nn.parallel import DataParallel
+from torch.nn import Module
 
 from .pnp import PnPModel
 from .dip import DeepImagePrior
