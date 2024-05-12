@@ -7,7 +7,12 @@ from .r2r import R2REILoss
 
 
 def get_losses(
-    method, noise_level, stop_gradient, sure_alternative=None, scale_antialias=False
+    method,
+    noise_level,
+    stop_gradient,
+    sure_alternative=None,
+    scale_antialias=False,
+    alpha_tradeoff=1.0,
 ):
     """
     Get the losses for a given training setting
@@ -55,7 +60,10 @@ def get_losses(
             )
         elif loss_name == "ei":
             losses.append(
-                EILoss(metric=mse(), transform=ei_transform, no_grad=stop_gradient)
+                EILoss(metric=mse(),
+                       transform=ei_transform,
+                       no_grad=stop_gradient,
+                       weight=alpha_tradeoff)
             )
 
     return losses

@@ -40,7 +40,9 @@ parser.add_argument("--batch_size", type=int, default=None)
 parser.add_argument("--download", action="store_true")
 parser.add_argument("--sure_alternative", type=str, default=None)
 parser.add_argument("--epochs", type=int, default=None)
+parser.add_argument("--checkpoint_interval", type=int, default=None)
 parser.add_argument("--memoize_gt", default=True, action=argparse.BooleanOptionalAction)
+parser.add_argument("--loss_alpha_tradeoff", type=float, default=1.0)
 args = parser.parse_args()
 
 data_parallel_devices = (
@@ -114,6 +116,7 @@ losses = get_losses(
     args.stop_gradient,
     sure_alternative=args.sure_alternative,
     scale_antialias=args.scale_transforms_antialias,
+    alpha_tradeoff=args.loss_alpha_tradeoff,
 )
 
 batch_size = args.batch_size or 8
@@ -198,29 +201,32 @@ for epoch in range(epochs):
     progress.display(epoch)
 
     # save the training state regularly and after training completion
-    checkpoint_interval = 50
-    if args.dataset == "urban100":
-        if args.method == "proposed":
-            if epoch <= 1000:
-                checkpoint_interval = 100
-            elif epoch <= 2000:
-                checkpoint_interval = 200
-            elif epoch <= 3000:
+    if args.checkpoint_interval is not None:
+        checkpoint_interval = args.checkpoint_interval
+    else:
+        checkpoint_interval = 50
+        if args.dataset == "urban100":
+            if args.method == "proposed":
+                if epoch <= 1000:
+                    checkpoint_interval = 100
+                elif epoch <= 2000:
+                    checkpoint_interval = 200
+                elif epoch <= 3000:
+                    checkpoint_interval = 400
+                else:
+                    checkpoint_interval = 800
+            else:
                 checkpoint_interval = 400
+        elif args.dataset == "ct":
+            if args.method == "proposed":
+                if epoch <= 10:
+                    checkpoint_interval = 1
+                elif epoch <= 50:
+                    checkpoint_interval = 5
+                else:
+                    checkpoint_interval = 10
             else:
-                checkpoint_interval = 800
-        else:
-            checkpoint_interval = 400
-    elif args.dataset == "ct":
-        if args.method == "proposed":
-            if epoch <= 10:
-                checkpoint_interval = 1
-            elif epoch <= 50:
-                checkpoint_interval = 5
-            else:
-                checkpoint_interval = 10
-        else:
-            checkpoint_interval = 50
+                checkpoint_interval = 50
     if (epoch % checkpoint_interval == 0) or (epoch == epochs - 1):
         checkpoint_path = f"{args.out_dir}/checkpoints/ckp_{epoch}.pt"
         save_training_state(epoch, model, optimizer, scheduler, checkpoint_path)
