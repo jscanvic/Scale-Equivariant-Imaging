@@ -7,6 +7,8 @@ from .pnp import PnPModel
 from .dip import DeepImagePrior
 from .bm3d_deblurring import BM3D
 from .upsample import Upsample
+from .diffpir import DiffPIR
+from .dps import DPS
 
 
 class Identity(Module):
@@ -31,8 +33,6 @@ def get_model(
     :param task: task to perform (i.e. sr or denoising)
     :param sr_factor: super-resolution factor (optional)
     """
-    assert kind in ["swinir", "dip", "pnp", "bm3d", "id", "up"]
-
     if kind == "swinir":
         upscale = sr_factor if task == "sr" else 1
         upsampler = "pixelshuffle" if task == "sr" else None
@@ -77,10 +77,16 @@ def get_model(
         )
     elif kind == "bm3d":
         model = BM3D(physics=physics, sigma_psd=noise_level / 255)
+    elif kind == "diffpir":
+        model = DiffPIR(physics=physics)
+    elif kind == "dps":
+        model = DPS(physics=physics, device=device)
     elif kind == "id":
         model = Identity()
     elif kind == "up":
         model = Upsample(factor=sr_factor)
+    else:
+        raise ValueError(f"Unknown model kind: {kind}")
 
     if data_parallel_devices is not None:
         devices = data_parallel_devices

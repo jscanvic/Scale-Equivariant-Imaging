@@ -1,5 +1,5 @@
 from kornia.color import rgb_to_ycbcr
-from torchmetrics.functional import (
+from torchmetrics.functional.image import (
     peak_signal_noise_ratio,
     structural_similarity_index_measure,
 )

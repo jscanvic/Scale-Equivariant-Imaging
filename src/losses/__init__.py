@@ -1,9 +1,10 @@
-from deepinv.loss import SupLoss, SureGaussianLoss, EILoss
+from deepinv.loss import SupLoss, EILoss
 from deepinv.loss.metric import mse
 from deepinv.transform import Rotate, Shift
 
 from losses.ei import Scale
 from .r2r import R2REILoss
+from .sure import SureGaussianLoss
 
 
 def get_losses(
@@ -13,6 +14,7 @@ def get_losses(
     sure_alternative=None,
     scale_antialias=False,
     alpha_tradeoff=1.0,
+    sure_measurements_crop_size=None,
 ):
     """
     Get the losses for a given training setting
@@ -33,6 +35,8 @@ def get_losses(
         loss_names = ["sup"]
     elif method == "css":
         loss_names = ["sup"]
+    elif method == "sure":
+        loss_names = ["sure"]
     elif method == "ei-rotate":
         loss_names = ["sure", "ei"]
         ei_transform = Rotate()
@@ -48,7 +52,12 @@ def get_losses(
         if loss_name == "sup":
             losses.append(SupLoss(metric=mse()))
         elif loss_name == "sure":
-            losses.append(SureGaussianLoss(sigma=noise_level / 255))
+            losses.append(
+                SureGaussianLoss(
+                    sigma=noise_level / 255,
+                    measurements_crop_size=sure_measurements_crop_size,
+                )
+            )
         elif loss_name == "r2rei":
             losses.append(
                 R2REILoss(

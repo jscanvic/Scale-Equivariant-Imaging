@@ -43,6 +43,8 @@ parser.add_argument("--epochs", type=int, default=None)
 parser.add_argument("--checkpoint_interval", type=int, default=None)
 parser.add_argument("--memoize_gt", default=True, action=argparse.BooleanOptionalAction)
 parser.add_argument("--loss_alpha_tradeoff", type=float, default=1.0)
+parser.add_argument("--cropped_sure", default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument("--eval_performance", default=False, action=argparse.BooleanOptionalAction)
 args = parser.parse_args()
 
 data_parallel_devices = (
@@ -50,16 +52,6 @@ data_parallel_devices = (
     if args.data_parallel_devices is not None
     else None
 )
-
-assert args.method in [
-    "proposed",
-    "sup",
-    "css",
-    "ei-rotate",
-    "ei-shift",
-    "noise2inverse",
-], "Unsupported training method"
-assert args.task in ["sr", "deblurring"], "Unsupported task"
 
 physics = get_physics(
     task=args.task,
@@ -110,6 +102,15 @@ eval_dataset = EvalDataset(
     memoize_gt=args.memoize_gt,
 )
 
+if args.cropped_sure:
+    from deepinv.physics import Blur
+    assert isinstance(physics, Blur), "Only blur physics is supported"
+    kernel = physics.filter
+    assert kernel.shape[-2] == kernel.shape[-1], "Only square kernels are supported"
+    kernel_size = kernel.shape[-1]
+    sure_measurements_crop_size = kernel_size - 1
+else:
+    sure_measurements_crop_size = None
 losses = get_losses(
     args.method,
     args.noise_level,
@@ -117,6 +118,7 @@ losses = get_losses(
     sure_alternative=args.sure_alternative,
     scale_antialias=args.scale_transforms_antialias,
     alpha_tradeoff=args.loss_alpha_tradeoff,
+    sure_measurements_crop_size=sure_measurements_crop_size,
 )
 
 batch_size = args.batch_size or 8
@@ -173,29 +175,23 @@ for epoch in range(epochs):
     scheduler.step()
 
     # evaluate the model regularly
-    eval_interval = 5
-    if args.dataset == "ct" and args.method == "proposed":
-        if epoch <= 10:
-            eval_interval = 1
-        elif epoch <= 50:
-            eval_interval = 5
-        elif epoch <= 100:
-            eval_interval = 10
-    if epoch % eval_interval == 0:
-        for x, y in eval_dataloader:
-            x = x.to(args.device)
-            y = y.to(args.device)
+    if args.eval_performance:
+        eval_interval = 5
+        if epoch % eval_interval == 0:
+            for x, y in eval_dataloader:
+                x = x.to(args.device)
+                y = y.to(args.device)
 
-            with torch.no_grad():
-                if args.method != "noise2inverse":
-                    x_hat = model(y)
-                else:
-                    model = Noise2InverseModel(model, physics)
-                    x_hat = model(y)
-                    model = model.backbone
+                with torch.no_grad():
+                    if args.method != "noise2inverse":
+                        x_hat = model(y)
+                    else:
+                        model = Noise2InverseModel(model, physics)
+                        x_hat = model(y)
+                        model = model.backbone
 
-            cur_psnr = psnr_fn(x_hat, x)
-            psnr_meter.update(cur_psnr.item())
+                cur_psnr = psnr_fn(x_hat, x)
+                psnr_meter.update(cur_psnr.item())
 
     # report the training progress
     progress.display(epoch)
@@ -206,29 +202,11 @@ for epoch in range(epochs):
     else:
         checkpoint_interval = 50
         if args.dataset == "urban100":
-            if args.method == "proposed":
-                if epoch <= 1000:
-                    checkpoint_interval = 100
-                elif epoch <= 2000:
-                    checkpoint_interval = 200
-                elif epoch <= 3000:
-                    checkpoint_interval = 400
-                else:
-                    checkpoint_interval = 800
-            else:
-                checkpoint_interval = 400
+            checkpoint_interval = 400
         elif args.dataset == "ct":
-            if args.method == "proposed":
-                if epoch <= 10:
-                    checkpoint_interval = 1
-                elif epoch <= 50:
-                    checkpoint_interval = 5
-                else:
-                    checkpoint_interval = 10
-            else:
-                checkpoint_interval = 50
+            checkpoint_interval = 50
     if (epoch % checkpoint_interval == 0) or (epoch == epochs - 1):
-        checkpoint_path = f"{args.out_dir}/checkpoints/ckp_{epoch}.pt"
+        checkpoint_path = f"{args.out_dir}/checkpoints/ckp_{epoch:03}.pt"
         save_training_state(epoch, model, optimizer, scheduler, checkpoint_path)
 
 # save the weights after training completion
