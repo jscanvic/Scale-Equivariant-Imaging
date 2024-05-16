@@ -3,6 +3,7 @@
 import bm3d
 
 import argparse
+from argparse import BooleanOptionalAction
 
 import torch
 from torch.optim import Adam
@@ -20,31 +21,28 @@ from torch.nn.parallel import DataParallel
 from noise2inverse import Noise2InverseModel
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset", type=str, default="div2k")
-parser.add_argument("--method", type=str)
-parser.add_argument("--scale_transforms_antialias", action="store_true")
-parser.add_argument(
-    "--stop_gradient", default=True, action=argparse.BooleanOptionalAction
-)
 parser.add_argument("--task", type=str)
+parser.add_argument("--method", type=str)
+parser.add_argument("--dataset", type=str, default="div2k")
+parser.add_argument("--stop_gradient", action=BooleanOptionalAction, default=True)
 parser.add_argument("--sr_factor", type=int, default=None)
 parser.add_argument("--sr_filter", type=str, default="bicubic_torch")
 parser.add_argument("--kernel", type=str, default=None)
-parser.add_argument("--noise_level", type=int)
-parser.add_argument("--resize_gt", type=int, default=256)
-parser.add_argument("--no_resize_gt", action="store_true")
+parser.add_argument("--noise_level", type=int, default=5)
+parser.add_argument("--resize_gt", action=BooleanOptionalAction, default=True)
+parser.add_argument("--gt_size", type=int, default=256)
 parser.add_argument("--out_dir", type=str, default="./results")
 parser.add_argument("--device", type=str, default="cpu")
 parser.add_argument("--data_parallel_devices", type=str, default=None)
 parser.add_argument("--batch_size", type=int, default=None)
-parser.add_argument("--download", action="store_true")
+parser.add_argument("--download", action=BooleanOptionalAction, default=False)
 parser.add_argument("--sure_alternative", type=str, default=None)
 parser.add_argument("--epochs", type=int, default=None)
 parser.add_argument("--checkpoint_interval", type=int, default=None)
-parser.add_argument("--memoize_gt", default=True, action=argparse.BooleanOptionalAction)
+parser.add_argument("--memoize_gt", action=BooleanOptionalAction, default=True)
 parser.add_argument("--loss_alpha_tradeoff", type=float, default=1.0)
-parser.add_argument("--cropped_sure", default=False, action=argparse.BooleanOptionalAction)
-parser.add_argument("--eval_performance", default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument("--cropped_sure", action=BooleanOptionalAction, default=True)
+parser.add_argument("--scale_transforms_antialias", action=BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
 data_parallel_devices = (
@@ -75,25 +73,14 @@ model.train()
 
 dataset_root = "./datasets"
 css = args.method == "css"
-resize_gt = None if args.no_resize_gt else args.resize_gt
+gt_size = args.gt_size if args.resize_gt else None
 force_rgb = True if args.dataset == "ct" else False
 
 training_dataset = TrainingDataset(
     dataset_root,
     physics,
-    resize=resize_gt,
+    resize=gt_size,
     css=css,
-    download=args.download,
-    device=args.device,
-    dataset=args.dataset,
-    force_rgb=force_rgb,
-    method=args.method,
-    memoize_gt=args.memoize_gt,
-)
-eval_dataset = EvalDataset(
-    dataset_root,
-    physics,
-    resize=resize_gt,
     download=args.download,
     device=args.device,
     dataset=args.dataset,
@@ -123,7 +110,6 @@ losses = get_losses(
 
 batch_size = args.batch_size or 8
 training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
-eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=False)
 
 lr = 2e-4 if args.task == "sr" else 5e-4
 optimizer = Adam(model.parameters(), lr=lr, betas=(0.9, 0.99))
@@ -131,7 +117,6 @@ scheduler = MultiStepLR(optimizer, milestones=[250, 400, 450, 475], gamma=0.5)
 
 # training meters used for monitoring the training process
 loss_meter = AverageMeter("Training_Loss", ":.2e")
-psnr_meter = AverageMeter("Eval_PSNR", ":.2f")
 
 if args.epochs is None:
     epochs = 500 if args.dataset != "ct" else 100
@@ -139,13 +124,12 @@ if args.epochs is None:
         epochs = 4000
 else:
     epochs = args.epochs
-progress = ProgressMeter(epochs, [loss_meter, psnr_meter])
+progress = ProgressMeter(epochs, [loss_meter])
 
 # training loop
 for epoch in range(epochs):
     # set training meters to zero
     loss_meter.reset()
-    psnr_meter.reset()
 
     # stochastic gradient descent step
     for x, y in training_dataloader:
@@ -173,25 +157,6 @@ for epoch in range(epochs):
         loss_meter.update(training_loss.item())
 
     scheduler.step()
-
-    # evaluate the model regularly
-    if args.eval_performance:
-        eval_interval = 5
-        if epoch % eval_interval == 0:
-            for x, y in eval_dataloader:
-                x = x.to(args.device)
-                y = y.to(args.device)
-
-                with torch.no_grad():
-                    if args.method != "noise2inverse":
-                        x_hat = model(y)
-                    else:
-                        model = Noise2InverseModel(model, physics)
-                        x_hat = model(y)
-                        model = model.backbone
-
-                cur_psnr = psnr_fn(x_hat, x)
-                psnr_meter.update(cur_psnr.item())
 
     # report the training progress
     progress.display(epoch)
