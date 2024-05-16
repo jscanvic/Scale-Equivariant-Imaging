@@ -32,8 +32,8 @@ You can train a model using one of the methods used in the paper, i.e. the propo
 python demo/train.py --device cuda:0 \
  --method proposed \
  --task deblurring \
- --kernel kernels/Gaussian_R2.pt \
- --noise_level 5 --out_dir ./results \
+ --kernel Gaussian_R2 \
+ --out_dir ./results \
  --download
 ```
 
@@ -44,8 +44,8 @@ python demo/train.py --device cuda:0 \
 | `--no-stop_gradient` | Don't stop the gradient in the equivariant loss                           |
 | `--task`             | Task, i.e. `deblurring` or `sr`                                           |
 | `--sr_factor`        | Super-resolution factor, i.e. `2` or `4` (optional)                       |
-| `--kernel`           | Kernel path for deblurring (optional)                                     |
-| `--noise_level`      | Noise level, e.g. `5`                                                     |
+| `--kernel`           | Kernel name for deblurring, e.g. `Gaussian_R2` or `Box_R3` (optional)     |
+| `--noise_level`      | Noise level, e.g. 5 (default)                                             |
 | `--out_dir`          | Directory used for saving training checkpoints and final weights          |
 | `--device`           | PyTorch device, e.g. `cpu` (default) or `cuda:0`                          |
 | `--download`         | Automatically download the training dataset if needed                     |
@@ -56,7 +56,7 @@ You can test a model with precomputed weights used in the paper, which we made a
 
 ```sh
 python demo/test.py --device cuda:0 --task deblurring \
- --kernel kernels/Gaussian_R2.pt --noise_level 5 \
+ --kernel Gaussian_R2 \
  --weights Deblurring_Gaussian_R2_Noise5_Proposed \
  --download
 ```
@@ -66,8 +66,8 @@ python demo/test.py --device cuda:0 --task deblurring \
 | `--dataset`     | Test dataset, i.e. `div2k` (default), `urban100` or `ct`                                                                                                                                      |
 | `--task`        | Task, i.e. `deblurring` or `sr`                                                                                                                                                               |
 | `--sr_factor`   | Super-resolution factor, i.e. `2` or `4` (optional)                                                                                                                                           |
-| `--kernel`      | Kernel path for deblurring (optional)                                                                                                                                                         |
-| `--noise_level` | Noise level, e.g. `5`                                                                                                                                                                         |
+| `--kernel`      | Kernel name for deblurring, e.g. `Gaussian_R2` or `Box_R3` (optional)                                                                                                                         |
+| `--noise_level` | Noise level, e.g. 5 (default)                                                                                                                                                                 |
 | `--model_kind`  | Kind of algorithm used for reconstruction, i.e. `swinir` (default), `dip`, `pnp`, `bm3d`, `up` or `id`                                                                                        |
 | `--weights`     | Path to the weights or name of a pretrained model, e.g. `Deblurring_Gaussian_R2_Noise5_Proposed` (See [Hugging Face 🤗](https://huggingface.co/jscanvic/scale-equivariant-imaging/tree/main)) |
 | `--device`      | PyTorch device, e.g. `cpu` (default) or `cuda:0`                                                                                                                                              |

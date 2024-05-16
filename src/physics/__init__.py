@@ -1,8 +1,10 @@
 import torch
 from deepinv.physics import Blur, GaussianNoise
+from os.path import exists
 
 from .ct_like_filter import CTLikeFilter
 from .downsampling import Downsampling
+from .kernels import get_kernel
 
 
 def get_physics(
@@ -26,7 +28,10 @@ def get_physics(
 
     if task == "deblurring":
         if kernel_path != "ct_like":
-            kernel = torch.load(kernel_path)
+            if exists(kernel_path):
+                kernel = torch.load(kernel_path)
+            else:
+                kernel = get_kernel(name=kernel_path)
             kernel = kernel.unsqueeze(0).unsqueeze(0).to(device)
             physics = Blur(filter=kernel, padding="circular", device=device)
         else:
