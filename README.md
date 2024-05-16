@@ -76,12 +76,10 @@ python demo/test.py --device cuda:0 --task deblurring \
 ## Citation
 
 ```bibtex
-@misc{scanvic2023selfsupervised,
+@article{scanvic2023self,
 	title={Self-Supervised Learning for Image Super-Resolution and Deblurring},
-	author={Jérémy Scanvic and Mike Davies and Patrice Abry and Julián Tachella},
-	year={2023},
-	eprint={2312.11232},
-	archivePrefix={arXiv},
-	primaryClass={eess.IV}
+	author={Scanvic, J{\'e}r{\'e}my and Davies, Mike and Abry, Patrice and Tachella, Juli{\'a}n},
+	journal={arXiv preprint arXiv:2312.11232},
+	year={2023}
 }
 ```
