@@ -6,11 +6,13 @@ The implementation of ["Self-Supervised Learning for Image Super-Resolution and 
 
 ## Results
 
-<img src="./images/Reconstruction_Performance.png" alt="Reconstruction performance" width="100%">
+<img src="./images/Reconstruction_Performance.png" alt="reconstruction performance" width="100%">
+
+<img src="./images/Sharp_Vs_Blurry_Mushroom.svg" alt="sharp versus blurry mushroom" width="100%">
 
 Sample deblurring results using the proposed self-supervised method and the supervised baseline
 
-<img src="./images/results.png" alt="Comparison of our self-supervised method with a supervised method and another self-supervised method (CSS) on Gaussian deblurring for different standard deviations $R_\{text{blur}}$" width="100%">
+<img src="./images/results.png" alt="comparison of our self-supervised method with a supervised method and another self-supervised method (CSS) on Gaussian deblurring for different standard deviations $R_\{text{blur}}$" width="100%">
 
 ## Getting Started
 

@@ -33,7 +33,6 @@ parser.add_argument("--download", action="store_true")
 parser.add_argument("--model_kind", type=str, default="swinir")
 parser.add_argument("--dataset_max_size", type=int, default=None)
 parser.add_argument("--save_images", action="store_true")
-parser.add_argument("--all_images", action="store_true")
 parser.add_argument("--dataset_offset", type=int, default=None)
 parser.add_argument("--indices", type=str, default=None)
 parser.add_argument("--out_dir", type=str, default=None)
@@ -171,7 +170,7 @@ for i in tqdm(indices):
     if args.print_all_metrics:
         print(f"METRICS_{i}: PSNR: {psnr_val:.1f}, SSIM: {ssim_val:.3f}")
 
-    if args.save_images and (args.all_images or i < 5):
+    if args.save_images:
         from torchvision.utils import save_image
 
         assert args.out_dir is not None
