@@ -5,7 +5,7 @@ from deepinv.optim.optimizers import optim_builder
 
 
 class TV(Module):
-    def __init__(self, physics, lambd: 1e-2, stepsize=1.0, max_iter=300, n_it_max=20, early_stop=True):
+    def __init__(self, physics, lambd, stepsize=1.0, max_iter=300, n_it_max=20, early_stop=True):
         super().__init__()
 
         self.physics = physics
@@ -13,15 +13,15 @@ class TV(Module):
         self.data_fidelity = L2()
         self.prior = TVPrior(n_it_max=n_it_max)
 
-        params_algo = {"stepsize": stepsize, "lambda": lambd}
+        self.params_algo = {"stepsize": stepsize, "lambda": lambd}
         self.backbone = optim_builder(
             iteration="PGD",
-            prior=prior,
-            data_fidelity=data_fidelity,
+            prior=self.prior,
+            data_fidelity=self.data_fidelity,
             early_stop=early_stop,
             max_iter=max_iter,
-            verbose=verbose,
-            params_algo=params_algo,
+            params_algo=self.params_algo,
+            verbose=False,
         )
 
     def forward(self, y):

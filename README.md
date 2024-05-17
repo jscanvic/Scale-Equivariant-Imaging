@@ -10,6 +10,8 @@ The implementation of ["Self-Supervised Learning for Image Super-Resolution and 
 
 <img src="./images/Sharp_Vs_Blurry_Mushroom.svg" alt="sharp versus blurry mushroom" width="100%">
 
+<img src="./images/Proposed_Vs_TV.svg" alt="sharp estimate using our method vs using TV-regularization" width="100%">
+
 Sample deblurring results using the proposed self-supervised method and the supervised baseline
 
 <img src="./images/results.png" alt="comparison of our self-supervised method with a supervised method and another self-supervised method (CSS) on Gaussian deblurring for different standard deviations $R_\{text{blur}}$" width="100%">

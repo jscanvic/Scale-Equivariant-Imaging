@@ -42,6 +42,8 @@ parser.add_argument("--noise2inverse", action="store_true")
 parser.add_argument("--print_all_metrics", action="store_true")
 parser.add_argument("--r2r", action="store_true")
 parser.add_argument("--r2r_itercount", type=int, default=1)
+parser.add_argument("--tv_lambd", type=float, default=None)
+parser.add_argument("--tv_max_iter", type=int, default=300)
 args = parser.parse_args()
 
 physics = get_physics(
@@ -71,6 +73,8 @@ model = get_model(
     device=args.device,
     kind=args.model_kind,
     dip_iterations=dip_iterations,
+    tv_lambd=args.tv_lambd,
+    tv_max_iter=args.tv_max_iter,
 )
 model.to(args.device)
 model.eval()

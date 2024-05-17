@@ -9,7 +9,7 @@ from .bm3d_deblurring import BM3D
 from .upsample import Upsample
 from .diffpir import DiffPIR
 from .dps import DPS
-# from .tv import TV
+from .tv import TV
 
 
 class Identity(Module):
@@ -27,6 +27,8 @@ def get_model(
     kind="swinir",
     data_parallel_devices=None,
     dip_iterations=4000,
+    tv_lambd=None,
+    tv_max_iter=None,
 ):
     """
     Get a model with randomly initialized weights for the given task
@@ -83,7 +85,7 @@ def get_model(
     elif kind == "dps":
         model = DPS(physics=physics, device=device)
     elif kind == "tv":
-        model = TV(physics=physics)
+        model = TV(physics=physics, lambd=tv_lambd, max_iter=tv_max_iter)
     elif kind == "id":
         model = Identity()
     elif kind == "up":
