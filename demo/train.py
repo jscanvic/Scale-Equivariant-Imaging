@@ -9,7 +9,8 @@ import torch
 from torch.optim import Adam
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
-from deepinv.utils import AverageMeter, ProgressMeter
+from datetime import datetime
+from torchmetrics import MeanMetric
 
 from datasets import TrainingDataset, EvalDataset
 from losses import get_losses
@@ -115,8 +116,7 @@ lr = 2e-4 if args.task == "sr" else 5e-4
 optimizer = Adam(model.parameters(), lr=lr, betas=(0.9, 0.99))
 scheduler = MultiStepLR(optimizer, milestones=[250, 400, 450, 475], gamma=0.5)
 
-# training meters used for monitoring the training process
-loss_meter = AverageMeter("Training_Loss", ":.2e")
+training_loss_metric = MeanMetric()
 
 if args.epochs is None:
     epochs = 500 if args.dataset != "ct" else 100
@@ -124,12 +124,10 @@ if args.epochs is None:
         epochs = 4000
 else:
     epochs = args.epochs
-progress = ProgressMeter(epochs, [loss_meter])
 
 # training loop
 for epoch in range(epochs):
-    # set training meters to zero
-    loss_meter.reset()
+    training_loss_metric.reset()
 
     # stochastic gradient descent step
     for x, y in training_dataloader:
@@ -154,12 +152,15 @@ for epoch in range(epochs):
         training_loss.backward()
         optimizer.step()
 
-        loss_meter.update(training_loss.item())
+        training_loss_metric.update(training_loss.item())
 
     scheduler.step()
 
-    # report the training progress
-    progress.display(epoch)
+    # log progress to stdout
+    epochs_ndigits = len(str(int(epochs)))
+    current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    epoch_training_loss = training_loss_metric.compute().item()
+    print(f"\t{current_timestamp}\t[{epoch + 1:{epochs_ndigits}d}/{epochs}]\tTraining_Loss: {epoch_training_loss:.2e}")
 
     # save the training state regularly and after training completion
     if args.checkpoint_interval is not None:

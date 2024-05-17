@@ -9,6 +9,7 @@ from .bm3d_deblurring import BM3D
 from .upsample import Upsample
 from .diffpir import DiffPIR
 from .dps import DPS
+# from .tv import TV
 
 
 class Identity(Module):
@@ -81,6 +82,8 @@ def get_model(
         model = DiffPIR(physics=physics)
     elif kind == "dps":
         model = DPS(physics=physics, device=device)
+    elif kind == "tv":
+        model = TV(physics=physics)
     elif kind == "id":
         model = Identity()
     elif kind == "up":
