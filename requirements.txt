@@ -1,4 +1,4 @@
-deepinv @ git+https://github.com/deepinv/deepinv.git@a668f5bddfcd13ee1304bf6acc8f86a47a2e4c99
+deepinv @ git+https://github.com/deepinv/deepinv.git@v.0.2.0
 kornia==0.6.12
 Pillow==9.5.0
 torch==2.0.0

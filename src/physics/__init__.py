@@ -1,10 +1,11 @@
 import torch
-from deepinv.physics import Blur, GaussianNoise
+from deepinv.physics import GaussianNoise
 from os.path import exists
 
 from .ct_like_filter import CTLikeFilter
 from .downsampling import Downsampling
 from .kernels import get_kernel
+from .blur import Blur
 
 
 def get_physics(
