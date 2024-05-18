@@ -161,10 +161,9 @@ for i in tqdm(indices):
         x_hat = model(y).detach()
 
     assert x_hat.shape[1] in [1, 3]
-    y_channel = True if x_hat.shape[1] == 3 else False
 
-    psnr_val = psnr_fn(x_hat, x, y_channel=y_channel).item()
-    ssim_val = ssim_fn(x_hat, x, y_channel=y_channel).item()
+    psnr_val = psnr_fn(x_hat, x).item()
+    ssim_val = ssim_fn(x_hat, x).item()
 
     psnr_list.append(psnr_val)
     ssim_list.append(ssim_val)

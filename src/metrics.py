@@ -5,7 +5,7 @@ from torchmetrics.functional.image import (
 )
 
 
-def psnr_fn(x_hat, x, y_channel=False):
+def psnr_fn(x_hat, x, y_channel=True):
     """
     Compute the PSNR between two images
 
@@ -19,7 +19,7 @@ def psnr_fn(x_hat, x, y_channel=False):
     return peak_signal_noise_ratio(x_hat, x, data_range=1.0)
 
 
-def ssim_fn(x_hat, x, y_channel=False):
+def ssim_fn(x_hat, x, y_channel=True):
     """
     Compute the SSIM between two images
 
