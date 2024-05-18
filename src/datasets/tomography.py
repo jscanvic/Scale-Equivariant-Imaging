@@ -4,7 +4,7 @@ from torchvision.datasets.utils import download_and_extract_archive
 
 
 class TomographyDataset(Dataset):
-    def __init__(self, split, datasets_dir, channels=1, download=False):
+    def __init__(self, split, datasets_dir, channels=3, download=False):
         super().__init__()
         assert split in ["train", "val"]
         self.split = split

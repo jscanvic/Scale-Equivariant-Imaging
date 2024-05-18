@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from datetime import datetime
 from torchmetrics import MeanMetric
 
-from datasets import TrainingDataset, EvalDataset
+from datasets import TrainingDataset
 from losses import get_losses
 from metrics import psnr_fn
 from models import get_model
@@ -43,6 +43,7 @@ parser.add_argument("--checkpoint_interval", type=int, default=None)
 parser.add_argument("--memoize_gt", action=BooleanOptionalAction, default=True)
 parser.add_argument("--loss_alpha_tradeoff", type=float, default=1.0)
 parser.add_argument("--cropped_sure", action=BooleanOptionalAction, default=True)
+parser.add_argument("--sure_cropped_div", action=BooleanOptionalAction, default=False)
 parser.add_argument("--scale_transforms_antialias", action=BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
@@ -75,7 +76,6 @@ model.train()
 dataset_root = "./datasets"
 css = args.method == "css"
 gt_size = args.gt_size if args.resize_gt else None
-force_rgb = True if args.dataset == "ct" else False
 
 training_dataset = TrainingDataset(
     dataset_root,
@@ -85,13 +85,12 @@ training_dataset = TrainingDataset(
     download=args.download,
     device=args.device,
     dataset=args.dataset,
-    force_rgb=force_rgb,
     method=args.method,
     memoize_gt=args.memoize_gt,
 )
 
 if args.cropped_sure:
-    from deepinv.physics import Blur
+    from physics import Blur
     assert isinstance(physics, Blur), "Only blur physics is supported"
     kernel = physics.filter
     assert kernel.shape[-2] == kernel.shape[-1], "Only square kernels are supported"
@@ -107,6 +106,7 @@ losses = get_losses(
     scale_antialias=args.scale_transforms_antialias,
     alpha_tradeoff=args.loss_alpha_tradeoff,
     sure_measurements_crop_size=sure_measurements_crop_size,
+    sure_cropped_div=args.sure_cropped_div,
 )
 
 batch_size = args.batch_size or 8

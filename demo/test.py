@@ -93,7 +93,6 @@ if args.weights is not None:
     model.load_state_dict(weights)
 
 resize_gt = None if args.no_resize_gt else args.resize_gt
-force_rgb = True if args.dataset == "ct" else False
 method = "noise2inverse" if args.noise2inverse else None
 dataset = TestDataset(
     root="./datasets",
@@ -104,7 +103,6 @@ dataset = TestDataset(
     download=args.download,
     dataset=args.dataset,
     max_size=args.dataset_max_size,
-    force_rgb=force_rgb,
     offset=args.dataset_offset,
     method=method,
 )

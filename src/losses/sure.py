@@ -4,7 +4,7 @@ import torch.nn as nn
 import numpy as np
 
 
-def mc_div(y1, y, f, physics, tau):
+def mc_div(y1, y, f, physics, tau, crop_size=None):
     r"""
     Monte-Carlo estimation for the divergence of A(f(x)).
 
@@ -14,9 +14,26 @@ def mc_div(y1, y, f, physics, tau):
     :param int mc_iter: number of iterations. Default=1.
     :return: (float) hutch divergence.
     """
-    b = torch.randn_like(y)
+    if crop_size is None:
+        b = torch.randn_like(y)
+    else:
+        # shape of the inner part of the measurements
+        ip_shape = (y.size(0), y.size(1), y.size(2) - crop_size, y.size(3) - crop_size)
+        # half crop size
+        hcs = crop_size // 2
+        b = torch.zeros_like(y)
+        b[:, :, hcs:-hcs, hcs:-hcs] = torch.randn(*ip_shape, device=y.device, dtype=y.dtype)
+
     y2 = physics.A(f(y + b * tau, physics))
-    out = (b * (y2 - y1) / tau).mean()
+
+    out = b * (y2 - y1) / tau
+
+    if crop_size is not None:
+        # half crop size
+        hcs = crop_size // 2
+        out = out[:, :, hcs:-hcs, hcs:-hcs]
+
+    out = out.mean()
     return out
 
 
@@ -59,12 +76,13 @@ class SureGaussianLoss(nn.Module):
     :param float tau: Approximation constant for the Monte Carlo approximation of the divergence.
     """
 
-    def __init__(self, sigma, tau=1e-2, measurements_crop_size=None):
+    def __init__(self, sigma, tau=1e-2, measurements_crop_size=None, cropped_div=False):
         super(SureGaussianLoss, self).__init__()
         self.name = "SureGaussian"
         self.sigma2 = sigma**2
         self.tau = tau
         self.measurements_crop_size = measurements_crop_size
+        self.cropped_div = cropped_div
 
     def forward(self, y, x_net, physics, model, **kwargs):
         r"""
@@ -78,11 +96,19 @@ class SureGaussianLoss(nn.Module):
         """
 
         y1 = physics.A(x_net)
-        div = 2 * self.sigma2 * mc_div(y1, y, model, physics, self.tau)
+
+        if not self.cropped_div:
+            div = mc_div(y1, y, model, physics, self.tau)
+        else:
+            div = mc_div(y1, y, model, physics, self.tau, crop_size=self.measurements_crop_size)
+        div = 2 * self.sigma2 * div
+
         mse = y1 - y
         if self.measurements_crop_size is not None:
             half_crop_size = self.measurements_crop_size // 2
             mse = mse[:, :, half_crop_size:-half_crop_size, half_crop_size:-half_crop_size]
         mse = mse.pow(2).mean()
+
         loss_sure = mse + div - self.sigma2
+
         return loss_sure
