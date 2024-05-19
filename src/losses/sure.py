@@ -76,18 +76,18 @@ class SureGaussianLoss(nn.Module):
     :param float tau: Approximation constant for the Monte Carlo approximation of the divergence.
     """
 
-    def __init__(self, sigma, tau=1e-2, measurements_crop_size=None, cropped_div=False):
+    def __init__(self, sigma, tau=1e-2, measurements_crop_size=None, cropped_div=False, averaged_cst=False):
         super(SureGaussianLoss, self).__init__()
         self.name = "SureGaussian"
         self.sigma2 = sigma**2
         self.tau = tau
         self.measurements_crop_size = measurements_crop_size
         self.cropped_div = cropped_div
+        self.averaged_cst = averaged_cst
 
     def forward(self, y, x_net, physics, model, **kwargs):
         r"""
         Computes the SURE Loss.
-
         :param torch.Tensor y: Measurements.
         :param torch.Tensor x_net: reconstructed image :math:`\inverse{y}`.
         :param deepinv.physics.Physics physics: Forward operator associated with the measurements.
@@ -109,6 +109,9 @@ class SureGaussianLoss(nn.Module):
             mse = mse[:, :, half_crop_size:-half_crop_size, half_crop_size:-half_crop_size]
         mse = mse.pow(2).mean()
 
-        loss_sure = mse + div - self.sigma2
+        if not self.averaged_cst:
+            loss_sure = mse + div - self.sigma2
+        else:
+            loss_sure = mse + div - self.sigma2 / y.size(0)
 
         return loss_sure
