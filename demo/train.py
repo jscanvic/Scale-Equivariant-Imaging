@@ -45,6 +45,7 @@ parser.add_argument("--loss_alpha_tradeoff", type=float, default=1.0)
 parser.add_argument("--cropped_sure", action=BooleanOptionalAction, default=True)
 parser.add_argument("--sure_cropped_div", action=BooleanOptionalAction, default=False)
 parser.add_argument("--scale_transforms_antialias", action=BooleanOptionalAction, default=False)
+parser.add_argument("--sure_averaged_cst", action=BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
 data_parallel_devices = (
@@ -91,11 +92,12 @@ training_dataset = TrainingDataset(
 
 if args.cropped_sure:
     from physics import Blur
-    assert isinstance(physics, Blur), "Only blur physics is supported"
-    kernel = physics.filter
-    assert kernel.shape[-2] == kernel.shape[-1], "Only square kernels are supported"
-    kernel_size = kernel.shape[-1]
-    sure_measurements_crop_size = kernel_size - 1
+    if isinstance(physics, Blur):
+        kernel = physics.filter
+        kernel_size = max(kernel.shape[-2], kernel.shape[-1])
+        sure_measurements_crop_size = kernel_size - 1
+    else:
+        sure_measurements_crop_size = None
 else:
     sure_measurements_crop_size = None
 losses = get_losses(
@@ -107,6 +109,7 @@ losses = get_losses(
     alpha_tradeoff=args.loss_alpha_tradeoff,
     sure_measurements_crop_size=sure_measurements_crop_size,
     sure_cropped_div=args.sure_cropped_div,
+    sure_averaged_cst=args.sure_averaged_cst,
 )
 
 batch_size = args.batch_size or 8
