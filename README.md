@@ -2,17 +2,17 @@
 
 The implementation of ["Self-Supervised Learning for Image Super-Resolution and Deblurring"](https://arxiv.org/abs/2312.11232) by [Jérémy Scanvic](https://github.com/jscanvic), [Mike Davies](https://www.research.ed.ac.uk/en/persons/michael-davies), [Patrice Abry](http://perso.ens-lyon.fr/patrice.abry/index.html), and [Julián Tachella](https://tachella.github.io/)
 
-<img src="./images/figure1.png" alt="A diagram showing an overview of the method" width="100%">
+<img src="./assets/figure1.png" alt="A diagram showing an overview of the method" width="100%">
 
 ## Results
 
-<img src="./images/Reconstruction_Performance.png" alt="reconstruction performance" width="100%">
+<img src="./assets/Reconstruction_Performance.png" alt="reconstruction performance" width="100%">
 
-<img src="./images/Sharp_Vs_Blurry_Mushroom.svg" alt="sharp versus blurry mushroom" width="100%">
+<img src="./assets/Sharp_Vs_Blurry_Mushroom.svg" alt="sharp versus blurry mushroom" width="100%">
 
 Sample deblurring results using the proposed self-supervised method and the supervised baseline
 
-<img src="./images/results.png" alt="comparison of our self-supervised method with a supervised method and another self-supervised method (CSS) on Gaussian deblurring for different standard deviations $R_\{text{blur}}$" width="100%">
+<img src="./assets/results.png" alt="comparison of our self-supervised method with a supervised method and another self-supervised method (CSS) on Gaussian deblurring for different standard deviations $R_\{text{blur}}$" width="100%">
 
 ## Getting Started
 
