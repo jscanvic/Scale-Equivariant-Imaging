@@ -109,7 +109,7 @@ class SureGaussianLoss(nn.Module):
             mse = mse[:, :, half_crop_size:-half_crop_size, half_crop_size:-half_crop_size]
         mse = mse.pow(2).mean()
 
-        if not self.averaged_cst:
+        if self.measurements_crop_size is None or not self.averaged_cst:
             loss_sure = mse + div - self.sigma2
         else:
             loss_sure = mse + div - self.sigma2 / y.size(0)

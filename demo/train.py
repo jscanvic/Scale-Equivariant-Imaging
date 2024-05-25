@@ -42,10 +42,10 @@ parser.add_argument("--epochs", type=int, default=None)
 parser.add_argument("--checkpoint_interval", type=int, default=None)
 parser.add_argument("--memoize_gt", action=BooleanOptionalAction, default=True)
 parser.add_argument("--loss_alpha_tradeoff", type=float, default=1.0)
-parser.add_argument("--cropped_sure", action=BooleanOptionalAction, default=True)
-parser.add_argument("--sure_cropped_div", action=BooleanOptionalAction, default=False)
 parser.add_argument("--scale_transforms_antialias", action=BooleanOptionalAction, default=False)
-parser.add_argument("--sure_averaged_cst", action=BooleanOptionalAction, default=False)
+parser.add_argument("--cropped_sure", action=BooleanOptionalAction, default=True)
+parser.add_argument("--sure_cropped_div", action=BooleanOptionalAction, default=True)
+parser.add_argument("--sure_averaged_cst", action=BooleanOptionalAction, default=True)
 args = parser.parse_args()
 
 data_parallel_devices = (

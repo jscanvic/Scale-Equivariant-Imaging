@@ -165,6 +165,10 @@ for i in tqdm(indices):
     psnr_val = psnr_fn(x_hat, x).item()
     ssim_val = ssim_fn(x_hat, x).item()
 
+    from math import isnan
+    if isnan(psnr_val) or isnan(ssim_val):
+        breakpoint()
+
     psnr_list.append(psnr_val)
     ssim_list.append(ssim_val)
 
