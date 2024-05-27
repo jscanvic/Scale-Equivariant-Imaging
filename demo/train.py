@@ -43,9 +43,10 @@ parser.add_argument("--checkpoint_interval", type=int, default=None)
 parser.add_argument("--memoize_gt", action=BooleanOptionalAction, default=True)
 parser.add_argument("--loss_alpha_tradeoff", type=float, default=1.0)
 parser.add_argument("--scale_transforms_antialias", action=BooleanOptionalAction, default=False)
-parser.add_argument("--cropped_sure", action=BooleanOptionalAction, default=True)
+parser.add_argument("--partial_sure", action=BooleanOptionalAction, default=True)
 parser.add_argument("--sure_cropped_div", action=BooleanOptionalAction, default=True)
-parser.add_argument("--sure_averaged_cst", action=BooleanOptionalAction, default=True)
+parser.add_argument("--sure_averaged_cst", action=BooleanOptionalAction, default=None)
+parser.add_argument("--partial_sure_sr", action=BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
 data_parallel_devices = (
@@ -90,16 +91,30 @@ training_dataset = TrainingDataset(
     memoize_gt=args.memoize_gt,
 )
 
-if args.cropped_sure:
-    from physics import Blur
-    if isinstance(physics, Blur):
+if args.partial_sure:
+    if args.task == "deblurring":
+        from physics import Blur
+        assert isinstance(physics, Blur)
+
         kernel = physics.filter
         kernel_size = max(kernel.shape[-2], kernel.shape[-1])
-        sure_measurements_crop_size = kernel_size - 1
-    else:
-        sure_measurements_crop_size = None
+
+        sure_margin = (kernel_size - 1) // 2
+    elif args.task == "sr":
+        if args.partial_sure_sr:
+            assert args.sr_filter == "bicubic_torch"
+            sure_margin = 2
+        else:
+            sure_margin = None
 else:
-    sure_measurements_crop_size = None
+    sure_margin = None
+
+if args.sure_averaged_cst is None:
+    if args.task == "deblurring":
+        sure_averaged_cst = True
+    elif args.task == "sr":
+        sure_averaged_cst = False
+
 losses = get_losses(
     args.method,
     args.noise_level,
@@ -107,9 +122,9 @@ losses = get_losses(
     sure_alternative=args.sure_alternative,
     scale_antialias=args.scale_transforms_antialias,
     alpha_tradeoff=args.loss_alpha_tradeoff,
-    sure_measurements_crop_size=sure_measurements_crop_size,
     sure_cropped_div=args.sure_cropped_div,
     sure_averaged_cst=args.sure_averaged_cst,
+    sure_margin=sure_margin,
 )
 
 batch_size = args.batch_size or 8

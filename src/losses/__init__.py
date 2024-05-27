@@ -14,9 +14,9 @@ def get_losses(
     sure_alternative=None,
     scale_antialias=False,
     alpha_tradeoff=1.0,
-    sure_measurements_crop_size=None,
     sure_cropped_div=False,
     sure_averaged_cst=False,
+    sure_margin=None,
 ):
     """
     Get the losses for a given training setting
@@ -57,9 +57,9 @@ def get_losses(
             losses.append(
                 SureGaussianLoss(
                     sigma=noise_level / 255,
-                    measurements_crop_size=sure_measurements_crop_size,
                     cropped_div=sure_cropped_div,
                     averaged_cst=sure_averaged_cst,
+                    margin=sure_margin,
                 )
             )
         elif loss_name == "r2rei":
