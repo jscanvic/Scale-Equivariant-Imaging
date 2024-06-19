@@ -47,6 +47,7 @@ parser.add_argument("--partial_sure", action=BooleanOptionalAction, default=True
 parser.add_argument("--sure_cropped_div", action=BooleanOptionalAction, default=True)
 parser.add_argument("--sure_averaged_cst", action=BooleanOptionalAction, default=None)
 parser.add_argument("--partial_sure_sr", action=BooleanOptionalAction, default=False)
+parser.add_argument("--sure_margin", type=int, default=None)
 args = parser.parse_args()
 
 data_parallel_devices = (
@@ -92,7 +93,9 @@ training_dataset = TrainingDataset(
 )
 
 if args.partial_sure:
-    if args.task == "deblurring":
+    if args.sure_margin is not None:
+        sure_margin = args.sure_margin
+    elif args.task == "deblurring":
         from physics import Blur
         assert isinstance(physics, Blur)
 
@@ -105,9 +108,10 @@ if args.partial_sure:
             assert args.sr_filter == "bicubic_torch"
             sure_margin = 2
         else:
-            sure_margin = None
+            sure_margin = 0
 else:
-    sure_margin = None
+    assert args.sure_margin is None
+    sure_margin = 0
 
 if args.sure_averaged_cst is None:
     if args.task == "deblurring":

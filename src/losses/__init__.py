@@ -16,7 +16,7 @@ def get_losses(
     alpha_tradeoff=1.0,
     sure_cropped_div=False,
     sure_averaged_cst=False,
-    sure_margin=None,
+    sure_margin=0,
 ):
     """
     Get the losses for a given training setting
