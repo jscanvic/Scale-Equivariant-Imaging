@@ -33,18 +33,20 @@ class Noise2InverseLoss(Module):
     def forward(self, **kwargs):
         return self.loss(**kwargs)
 
-class LossFromLosses(Module):
-    def __init__(self, loss_fns):
+class SURELoss(Module):
+    def __init__(self, noise_level, cropped_div, averaged_cst, margin):
         super().__init__()
-        self.loss_fns = loss_fns
+        self.loss = SureGaussianLoss(
+            sigma=noise_level / 255
+            cropped_div=cropped_div,
+            averaged_cst=averaged_cst,
+            margin=margin,
+        )
 
     def forward(self, **kwargs):
-        loss = 0
-        for loss_fn in self.loss_fns:
-            loss += loss_fn(**kwargs)
-        return loss
+        return self.loss(**kwargs)
 
-class UnsupervisedLoss(Module):
+class ProposedLoss(Module):
     def __init__(self,
                  sure_alternative,
                  method,
@@ -56,9 +58,10 @@ class UnsupervisedLoss(Module):
                  sure_margin,
                  alpha_tradeoff)
         super().__init__()
+
         if sure_alternative == "r2r" and method == "proposed":
             ei_transform = Scale(antialias=scale_antialias)
-            loss_fn = [
+            loss_fns = [
                     R2REILoss(
                         transform=ei_transform,
                         sigma=noise_level / 255,
@@ -73,27 +76,31 @@ class UnsupervisedLoss(Module):
                 averaged_cst=sure_averaged_cst,
                 margin=sure_margin,
             )
-            loss_fn = [sure_loss]
+            loss_fns = [sure_loss]
 
-            if method != "sure":
-                if method == "proposed":
-                    ei_transform = Scale(antialias=scale_antialias)
-                elif method == "ei-rotate":
-                    ei_transform = Rotate()
-                elif method == "ei-shift":
-                    ei_transform = Shift()
+            if method == "proposed":
+                ei_transform = Scale(antialias=scale_antialias)
+            elif method == "ei-rotate":
+                ei_transform = Rotate()
+            elif method == "ei-shift":
+                ei_transform = Shift()
+            else:
+                raise ValueError(f"Unknown method: {method}")
 
-                equivariant_loss = EIloss(
-                        metric=mse(),
-                        transform=ei_transform,
-                        no_grad=stop_gradient,
-                        weight=alpha_tradeoff)
+            equivariant_loss = EIloss(
+                    metric=mse(),
+                    transform=ei_transform,
+                    no_grad=stop_gradient,
+                    weight=alpha_tradeoff)
 
-                loss_fn.append(equivariant_loss)
-        self.loss_fn = LossFromLosses(loss_fn)
+            loss_fns.append(equivariant_loss)
+        self.loss_fns = loss_fns
 
     def forward(self, **kwargs):
-        return self.loss_fn(**kwargs)
+        loss = 0
+        for loss_fn in self.loss_fns:
+            loss += loss_fn(**kwargs)
+        return loss
 
 
 class Loss(Module):
@@ -115,8 +122,13 @@ class Loss(Module):
             self.loss = CSSLoss()
         elif kind == "Noise2Inverse":
             self.loss = Noise2InverseLoss()
-        elif kind == "SelfSupervised":
-            self.loss = UnsupervisedLoss(sure_alternative=sure_alternative,
+        elif kind == "SURE":
+            self.loss = SURELoss(noise_level=noise_level,
+                                 cropped_div=sure_cropped_div,
+                                 averaged_cst=sure_averaged_cst,
+                                 margin=sure_margin)
+        elif kind == "Proposed":
+            self.loss = ProposedLoss(sure_alternative=sure_alternative,
                                          method=method,
                                          scale_antialias=scale_antialias,
                                          noise_level=noise_level,
@@ -157,8 +169,12 @@ def get_loss(args=args, sure_margin):
         kind = "CSS"
     elif method == "noise2inverse":
         kind = "Noise2Inverse"
+    elif method == "sure":
+        kind = "SURE"
+    elif method in ["proposed", "ei-rotate", "ei-shift"]:
+        kind = "Proposed"
     else:
-        kind = "SelfSupervised"
+        raise ValueError(f"Unknown method: {method}")
 
     loss = Loss(kind=kind,
                 sure_alternative=sure_alternative,
