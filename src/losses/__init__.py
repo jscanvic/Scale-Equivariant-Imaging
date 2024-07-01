@@ -13,8 +13,8 @@ class SupervisedLoss(Module):
         super().__init__()
         self.loss = SupLoss(metric=mse())
 
-    def forward(self, x, x_net, y, physics, model):
-        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
+    def forward(self, **kwargs):
+        return self.loss(**kwargs)
 
 
 class CSSLoss(Module):
@@ -22,31 +22,109 @@ class CSSLoss(Module):
         super().__init__()
         self.loss = SupLoss(metric=mse())
 
-    def forward(self, x, x_net, y, physics, model):
-        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
+    def forward(self, **kwargs):
+        return self.loss(**kwargs)
 
+class Noise2InverseLoss(Module):
+    def __init__(self):
+        super().__init__()
+        self.loss = SupLoss(metric=mse())
+
+    def forward(self, **kwargs):
+        return self.loss(**kwargs)
 
 class LossFromLosses(Module):
     def __init__(self, loss_fns):
         super().__init__()
         self.loss_fns = loss_fns
 
-    def forward(self, x, x_net, y, physics, model):
+    def forward(self, **kwargs):
         loss = 0
         for loss_fn in self.loss_fns:
-            loss += loss_fn(x=x, x_net=x_net, y=y, physics=physics, model=model)
+            loss += loss_fn(**kwargs)
         return loss
+
+class UnsupervisedLoss(Module):
+    def __init__(self,
+                 sure_alternative,
+                 method,
+                 scale_antialias,
+                 noise_level,
+                 stop_gradient,
+                 sure_cropped_div,
+                 sure_averaged_cst,
+                 sure_margin,
+                 alpha_tradeoff)
+        super().__init__()
+        if sure_alternative == "r2r" and method == "proposed":
+            ei_transform = Scale(antialias=scale_antialias)
+            loss_fn = [
+                    R2REILoss(
+                        transform=ei_transform,
+                        sigma=noise_level / 255,
+                        no_grad=stop_gradient,
+                        metric=mse(),
+                    )
+                ]
+        else:
+            sure_loss = SureGaussianLoss(
+                sigma=noise_level / 255,
+                cropped_div=sure_cropped_div,
+                averaged_cst=sure_averaged_cst,
+                margin=sure_margin,
+            )
+            loss_fn = [sure_loss]
+
+            if method != "sure":
+                if method == "proposed":
+                    ei_transform = Scale(antialias=scale_antialias)
+                elif method == "ei-rotate":
+                    ei_transform = Rotate()
+                elif method == "ei-shift":
+                    ei_transform = Shift()
+
+                equivariant_loss = EIloss(
+                        metric=mse(),
+                        transform=ei_transform,
+                        no_grad=stop_gradient,
+                        weight=alpha_tradeoff)
+
+                loss_fn.append(equivariant_loss)
+        self.loss_fn = LossFromLosses(loss_fn)
+
+    def forward(self, **kwargs):
+        return self.loss_fn(**kwargs)
 
 
 class Loss(Module):
-    def __init__(self, kind=None, loss_fns=None):
+    def __init__(self,
+                 kind,
+                 sure_alternative,
+                 method,
+                 scale_antialias,
+                 noise_level,
+                 stop_gradient,
+                 sure_cropped_div,
+                 sure_averaged_cst,
+                 sure_margin,
+                 alpha_tradeoff):
         super().__init__()
         if kind == "Supervised":
             self.loss = SupervisedLoss()
         elif kind == "CSS":
             self.loss = CSSLoss()
-        elif kind is None:
-            self.loss = LossFromLosses(loss_fns)
+        elif kind == "Noise2Inverse":
+            self.loss = Noise2InverseLoss()
+        elif kind == "SelfSupervised":
+            self.loss = UnsupervisedLoss(sure_alternative=sure_alternative,
+                                         method=method,
+                                         scale_antialias=scale_antialias,
+                                         noise_level=noise_level,
+                                         stop_gradient=stop_gradient,
+                                         sure_cropped_div=sure_cropped_div,
+                                         sure_averaged_cst=sure_averaged_cst,
+                                         sure_margin=sure_margin,
+                                         alpha_tradeoff=alpha_tradeoff)
         else:
             raise ValueError(f"Unknown loss kind: {kind}")
 
@@ -74,59 +152,23 @@ def get_loss(args=args, sure_margin):
     assert sure_alternative in [None, "r2r"]
 
     if method == "sup":
-        loss = Loss(kind="Supervised")
+        kind = "Supervised"
     elif method == "css":
-        loss_fns = [SupLoss(metric=mse())]
-        loss = Loss(kind="CSS")
+        kind = "CSS"
+    elif method == "noise2inverse":
+        kind = "Noise2Inverse"
     else:
-        if method == "proposed":
-            if sure_alternative is None:
-                loss_names = ["sure", "ei"]
-            elif sure_alternative == "r2r":
-                loss_names = ["r2rei"]
-            ei_transform = Scale(antialias=scale_antialias)
-        elif method == "sure":
-            loss_names = ["sure"]
-        elif method == "ei-rotate":
-            loss_names = ["sure", "ei"]
-            ei_transform = Rotate()
-        elif method == "ei-shift":
-            loss_names = ["sure", "ei"]
-            ei_transform = Shift()
-        elif method == "noise2inverse":
-            loss_names = ["sup"]
+        kind = "SelfSupervised"
 
-        loss_fns = []
-
-        for loss_name in loss_names:
-            if loss_name == "sup":
-                loss_fns.append(SupLoss(metric=mse()))
-            elif loss_name == "sure":
-                loss_fns.append(
-                    SureGaussianLoss(
-                        sigma=noise_level / 255,
-                        cropped_div=sure_cropped_div,
-                        averaged_cst=sure_averaged_cst,
-                        margin=sure_margin,
-                    )
-                )
-            elif loss_name == "r2rei":
-                loss_fns.append(
-                    R2REILoss(
-                        transform=ei_transform,
-                        sigma=noise_level / 255,
-                        no_grad=stop_gradient,
-                        metric=mse(),
-                    )
-                )
-            elif loss_name == "ei":
-                loss_fns.append(
-                    EILoss(metric=mse(),
-                           transform=ei_transform,
-                           no_grad=stop_gradient,
-                           weight=alpha_tradeoff)
-                )
-
-        loss = Loss(loss_fns=loss_fns)
+    loss = Loss(kind=kind,
+                sure_alternative=sure_alternative,
+                method=method,
+                scale_antialias=scale_antialias,
+                noise_level=noise_level,
+                stop_gradient=stop_gradient,
+                sure_cropped_div=sure_cropped_div,
+                sure_averaged_cst=sure_averaged_cst,
+                sure_margin=sure_margin,
+                alpha_tradeoff=alpha_tradeoff)
 
     return loss
