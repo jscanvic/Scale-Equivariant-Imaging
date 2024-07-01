@@ -20,23 +20,14 @@ from training import save_training_state, get_model_state_dict
 from physics import get_physics
 from torch.nn.parallel import DataParallel
 from noise2inverse import Noise2InverseModel
+from settings import DefaultArgParser
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--task", type=str)
+parser = DefaultArgParser()
 parser.add_argument("--method", type=str)
-parser.add_argument("--dataset", type=str, default="div2k")
 parser.add_argument("--stop_gradient", action=BooleanOptionalAction, default=True)
-parser.add_argument("--sr_factor", type=int, default=None)
-parser.add_argument("--sr_filter", type=str, default="bicubic_torch")
-parser.add_argument("--kernel", type=str, default=None)
-parser.add_argument("--noise_level", type=int, default=5)
-parser.add_argument("--resize_gt", action=BooleanOptionalAction, default=True)
-parser.add_argument("--gt_size", type=int, default=256)
-parser.add_argument("--out_dir", type=str, default="./results")
-parser.add_argument("--device", type=str, default="cpu")
+parser.add_argument("--out_dir", type=str)
 parser.add_argument("--data_parallel_devices", type=str, default=None)
 parser.add_argument("--batch_size", type=int, default=None)
-parser.add_argument("--download", action=BooleanOptionalAction, default=False)
 parser.add_argument("--sure_alternative", type=str, default=None)
 parser.add_argument("--epochs", type=int, default=None)
 parser.add_argument("--checkpoint_interval", type=int, default=None)

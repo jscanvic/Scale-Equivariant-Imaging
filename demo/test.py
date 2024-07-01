@@ -13,23 +13,14 @@ from datasets import TestDataset
 from metrics import psnr_fn, ssim_fn
 from models import get_model
 from physics import get_physics
+from settings import DefaultArgParser
 
 torch.manual_seed(0)
 np.random.seed(0)
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--dataset", type=str, default="div2k")
-parser.add_argument("--resize_gt", type=int, default=256)
-parser.add_argument("--no_resize_gt", action="store_true")
-parser.add_argument("--task", type=str)
-parser.add_argument("--sr_filter", type=str, default="bicubic_torch")
-parser.add_argument("--sr_factor", type=int, default=None)
-parser.add_argument("--kernel", type=str, default=None)
-parser.add_argument("--noise_level", type=int, default=5)
+parser = DefaultArgParser()
 parser.add_argument("--weights", type=str)
 parser.add_argument("--split", type=str, default="val")
-parser.add_argument("--device", type=str, default="cpu")
-parser.add_argument("--download", action="store_true")
 parser.add_argument("--model_kind", type=str, default="swinir")
 parser.add_argument("--dataset_max_size", type=int, default=None)
 parser.add_argument("--save_images", action="store_true")
@@ -82,23 +73,22 @@ model.eval()
 if args.weights is not None:
     if os.path.exists(args.weights):
         weights = torch.load(args.weights, map_location=args.device)
-        if "params" in weights:
-            weights = weights["params"]
     else:
         weights_url = f"https://huggingface.co/jscanvic/scale-equivariant-imaging/resolve/main/{args.weights}.pt?download=true"
-        weights = torch.hub.load_state_dict_from_url(
-            weights_url, map_location=args.device
-        )
+        weights = torch.hub.load_state_dict_from_url(weights_url, map_location=args.device)
+
+    if "params" in weights:
+        weights = weights["params"]
 
     model.load_state_dict(weights)
 
-resize_gt = None if args.no_resize_gt else args.resize_gt
+gt_size = args.gt_size if args.resize_gt else None
 method = "noise2inverse" if args.noise2inverse else None
 dataset = TestDataset(
     root="./datasets",
     split=args.split,
     physics=physics,
-    resize=resize_gt,
+    resize=gt_size,
     device=args.device,
     download=args.download,
     dataset=args.dataset,
