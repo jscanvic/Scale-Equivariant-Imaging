@@ -17,6 +17,15 @@ class SupervisedLoss(Module):
         return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
 
 
+class CSSLoss(Module):
+    def __init__(self):
+        super().__init__()
+        self.loss = SupLoss(metric=mse())
+
+    def forward(self, x, x_net, y, physics, model):
+        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
+
+
 class LossFromLosses(Module):
     def __init__(self, loss_fns):
         super().__init__()
@@ -30,12 +39,16 @@ class LossFromLosses(Module):
 
 
 class Loss(Module):
-    def __init__(self, is_supervised=False, loss_fns=None):
+    def __init__(self, kind=None, loss_fns=None):
         super().__init__()
-        if is_supervised:
+        if kind == "Supervised":
             self.loss = SupervisedLoss()
-        else:
+        elif kind == "CSS":
+            self.loss = CSSLoss()
+        elif kind is None:
             self.loss = LossFromLosses(loss_fns)
+        else:
+            raise ValueError(f"Unknown loss kind: {kind}")
 
     def forward(self, **kwargs):
         return self.loss(**kwargs)
@@ -61,7 +74,10 @@ def get_loss(args=args, sure_margin):
     assert sure_alternative in [None, "r2r"]
 
     if method == "sup":
-        loss = Loss(is_supervised=True)
+        loss = Loss(kind="Supervised")
+    elif method == "css":
+        loss_fns = [SupLoss(metric=mse())]
+        loss = Loss(kind="CSS")
     else:
         if method == "proposed":
             if sure_alternative is None:
@@ -69,8 +85,6 @@ def get_loss(args=args, sure_margin):
             elif sure_alternative == "r2r":
                 loss_names = ["r2rei"]
             ei_transform = Scale(antialias=scale_antialias)
-        elif method == "css":
-            loss_names = ["sup"]
         elif method == "sure":
             loss_names = ["sure"]
         elif method == "ei-rotate":
@@ -113,6 +127,6 @@ def get_loss(args=args, sure_margin):
                            weight=alpha_tradeoff)
                 )
 
-        loss = Loss(is_supervised=False, loss_fns=loss_fns)
+        loss = Loss(loss_fns=loss_fns)
 
     return loss
