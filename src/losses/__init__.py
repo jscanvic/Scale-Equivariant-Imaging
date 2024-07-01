@@ -1,3 +1,4 @@
+from torch.nn import Module
 from deepinv.loss import SupLoss, EILoss
 from deepinv.loss.metric import mse
 from deepinv.transform import Rotate, Shift
@@ -7,7 +8,20 @@ from .r2r import R2REILoss
 from .sure import SureGaussianLoss
 
 
-def get_losses(
+
+class Loss(Module):
+    def __init__(self, loss_fns):
+        super().__init__()
+        self.losses = loss_fns
+
+    def forward(self, x, x_net, y, physics, model):
+        loss = 0
+        for loss_fn in self.losses:
+            loss += loss_fn(x=x, x_net=x_net, y=y, physics=physics, model=model)
+        return loss
+
+
+def get_loss(
     method,
     noise_level,
     stop_gradient,
@@ -79,4 +93,4 @@ def get_losses(
                        weight=alpha_tradeoff)
             )
 
-    return losses
+    return Loss(losses)

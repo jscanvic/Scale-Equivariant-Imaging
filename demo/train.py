@@ -13,7 +13,7 @@ from datetime import datetime
 from torchmetrics import MeanMetric
 
 from datasets import TrainingDataset
-from losses import get_losses
+from losses import get_loss
 from metrics import psnr_fn
 from models import get_model
 from training import save_training_state, get_model_state_dict
@@ -110,7 +110,7 @@ if args.sure_averaged_cst is None:
     elif args.task == "sr":
         sure_averaged_cst = False
 
-losses = get_losses(
+loss = get_loss(
     args.method,
     args.noise_level,
     args.stop_gradient,
@@ -156,11 +156,7 @@ for epoch in range(epochs):
         else:
             x_hat = model(y)
 
-        training_loss = 0
-        for loss_fn in losses:
-            training_loss += loss_fn(
-                x=x, x_net=x_hat, y=y, physics=physics, model=model
-            )
+        training_loss = loss(x=x, x_net=x_hat, y=y, physics=physics, model=model)
 
         training_loss.backward()
         optimizer.step()
