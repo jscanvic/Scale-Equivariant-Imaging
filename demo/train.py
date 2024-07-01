@@ -104,23 +104,7 @@ else:
     assert args.sure_margin is None
     sure_margin = 0
 
-if args.sure_averaged_cst is None:
-    if args.task == "deblurring":
-        sure_averaged_cst = True
-    elif args.task == "sr":
-        sure_averaged_cst = False
-
-loss = get_loss(
-    args.method,
-    args.noise_level,
-    args.stop_gradient,
-    sure_alternative=args.sure_alternative,
-    scale_antialias=args.scale_transforms_antialias,
-    alpha_tradeoff=args.loss_alpha_tradeoff,
-    sure_cropped_div=args.sure_cropped_div,
-    sure_averaged_cst=args.sure_averaged_cst,
-    sure_margin=sure_margin,
-)
+loss = get_loss(args=args, sure_margin=sure_margin)
 
 batch_size = args.batch_size or 8
 training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)

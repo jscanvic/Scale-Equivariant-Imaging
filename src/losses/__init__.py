@@ -21,17 +21,7 @@ class Loss(Module):
         return loss
 
 
-def get_loss(
-    method,
-    noise_level,
-    stop_gradient,
-    sure_alternative=None,
-    scale_antialias=False,
-    alpha_tradeoff=1.0,
-    sure_cropped_div=False,
-    sure_averaged_cst=False,
-    sure_margin=0,
-):
+def get_loss(args=args, sure_margin):
     """
     Get the losses for a given training setting
 
@@ -39,6 +29,15 @@ def get_loss(
     :param float noise_level: noise level (e.g. 5)
     :param bool stop_gradient: stop the gradient for the proposed and EI methods
     """
+    method = args.method
+    noise_level = args.noise_level
+    stop_gradient = args.stop_gradient
+    sure_alternative = args.sure_alternative
+    scale_antialias = args.scale_transforms_antialias
+    alpha_tradeoff = args.loss_alpha_tradeoff
+    sure_cropped_div = args.sure_cropped_div
+    sure_averaged_cst = args.sure_averaged_cst
+
     assert sure_alternative in [None, "r2r"]
 
     if method == "proposed":
