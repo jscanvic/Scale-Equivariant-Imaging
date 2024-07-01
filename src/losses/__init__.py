@@ -61,6 +61,7 @@ class ProposedLoss(Module):
         sure_averaged_cst,
         sure_margin,
         alpha_tradeoff,
+        transforms,
     ):
         super().__init__()
 
@@ -84,14 +85,14 @@ class ProposedLoss(Module):
             )
             loss_fns = [sure_loss]
 
-            if method == "proposed":
+            if transforms == "Scaling_Transforms":
                 ei_transform = Scale(antialias=scale_antialias)
-            elif method == "ei-rotate":
+            if transforms == "Rotations":
                 ei_transform = Rotate()
-            elif method == "ei-shift":
+            if transforms == "Shifts":
                 ei_transform = Shift()
             else:
-                raise ValueError(f"Unknown method: {method}")
+                raise ValueError(f"Unknown transforms: {transforms}")
 
             equivariant_loss = EIloss(
                 metric=mse(),
@@ -114,7 +115,6 @@ class Loss(Module):
     def __init__(
         self,
         blueprint,
-        kind,
         noise_level,
         sure_cropped_div,
         sure_averaged_cst,
@@ -122,6 +122,22 @@ class Loss(Module):
         method,
     ):
         super().__init__()
+
+        # NOTE: kind is meant to become a command line argument
+        if method == "sup":
+            kind = "Supervised"
+        elif method == "css":
+            kind = "CSS"
+        elif method == "noise2inverse":
+            kind = "Noise2Inverse"
+        elif method == "sure":
+            kind = "SURE"
+        elif method in ["proposed", "ei-rotate", "ei-shift"]:
+            assert method is not in ["ei-rotate", "ei-shift"], f"Deprecated method: {method}"
+            kind = "Proposed"
+        else:
+            raise ValueError(f"Unknown method: {method}")
+
         if kind == "Supervised":
             self.loss = SupervisedLoss()
         elif kind == "CSS":
@@ -155,25 +171,12 @@ def get_loss(args, sure_margin):
     blueprint = {}
 
     blueprint[ProposedLoss.__name__] = {
-        "stop_gradient": args.stop_gradient,
-        "sure_alternative": args.sure_alternative,
-        "scale_antialias": args.scale_transforms_antialias,
-        "alpha_tradeoff": args.loss_alpha_tradeoff,
+        "stop_gradient": args.ProposedLoss__stop_gradient,
+        "sure_alternative": args.ProposedLoss__sure_alternative,
+        "scale_antialias": args.ProposedLoss_scale_antialias,
+        "alpha_tradeoff": args.ProposedLoss__alpha_tradeoff,
+        "transforms": args.ProposedLoss__transforms,
     }
-
-    # NOTE: kind is meant to become a command line argument
-    if method == "sup":
-        kind = "Supervised"
-    elif method == "css":
-        kind = "CSS"
-    elif method == "noise2inverse":
-        kind = "Noise2Inverse"
-    elif method == "sure":
-        kind = "SURE"
-    elif method in ["proposed", "ei-rotate", "ei-shift"]:
-        kind = "Proposed"
-    else:
-        raise ValueError(f"Unknown method: {method}")
 
     method = args.method
     noise_level = args.noise_level
@@ -182,7 +185,6 @@ def get_loss(args, sure_margin):
 
     loss = Loss(
         blueprint=blueprint,
-        kind=kind,
         method=method,
         noise_level=noise_level,
         sure_cropped_div=sure_cropped_div,
