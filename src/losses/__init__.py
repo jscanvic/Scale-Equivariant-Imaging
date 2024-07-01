@@ -25,6 +25,7 @@ class CSSLoss(Module):
     def forward(self, **kwargs):
         return self.loss(**kwargs)
 
+
 class Noise2InverseLoss(Module):
     def __init__(self):
         super().__init__()
@@ -33,11 +34,12 @@ class Noise2InverseLoss(Module):
     def forward(self, **kwargs):
         return self.loss(**kwargs)
 
+
 class SURELoss(Module):
     def __init__(self, noise_level, cropped_div, averaged_cst, margin):
         super().__init__()
         self.loss = SureGaussianLoss(
-            sigma=noise_level / 255
+            sigma=noise_level / 255,
             cropped_div=cropped_div,
             averaged_cst=averaged_cst,
             margin=margin,
@@ -46,29 +48,33 @@ class SURELoss(Module):
     def forward(self, **kwargs):
         return self.loss(**kwargs)
 
+
 class ProposedLoss(Module):
-    def __init__(self,
-                 sure_alternative,
-                 method,
-                 scale_antialias,
-                 noise_level,
-                 stop_gradient,
-                 sure_cropped_div,
-                 sure_averaged_cst,
-                 sure_margin,
-                 alpha_tradeoff)
+    def __init__(
+        self,
+        sure_alternative,
+        method,
+        scale_antialias,
+        noise_level,
+        stop_gradient,
+        sure_cropped_div,
+        sure_averaged_cst,
+        sure_margin,
+        alpha_tradeoff,
+    ):
         super().__init__()
 
+        assert args.sure_alternative in [None, "r2r"]
         if sure_alternative == "r2r" and method == "proposed":
             ei_transform = Scale(antialias=scale_antialias)
             loss_fns = [
-                    R2REILoss(
-                        transform=ei_transform,
-                        sigma=noise_level / 255,
-                        no_grad=stop_gradient,
-                        metric=mse(),
-                    )
-                ]
+                R2REILoss(
+                    transform=ei_transform,
+                    sigma=noise_level / 255,
+                    no_grad=stop_gradient,
+                    metric=mse(),
+                )
+            ]
         else:
             sure_loss = SureGaussianLoss(
                 sigma=noise_level / 255,
@@ -88,10 +94,11 @@ class ProposedLoss(Module):
                 raise ValueError(f"Unknown method: {method}")
 
             equivariant_loss = EIloss(
-                    metric=mse(),
-                    transform=ei_transform,
-                    no_grad=stop_gradient,
-                    weight=alpha_tradeoff)
+                metric=mse(),
+                transform=ei_transform,
+                no_grad=stop_gradient,
+                weight=alpha_tradeoff,
+            )
 
             loss_fns.append(equivariant_loss)
         self.loss_fns = loss_fns
@@ -104,17 +111,16 @@ class ProposedLoss(Module):
 
 
 class Loss(Module):
-    def __init__(self,
-                 kind,
-                 sure_alternative,
-                 method,
-                 scale_antialias,
-                 noise_level,
-                 stop_gradient,
-                 sure_cropped_div,
-                 sure_averaged_cst,
-                 sure_margin,
-                 alpha_tradeoff):
+    def __init__(
+        self,
+        blueprint,
+        kind,
+        noise_level,
+        sure_cropped_div,
+        sure_averaged_cst,
+        sure_margin,
+        method,
+    ):
         super().__init__()
         if kind == "Supervised":
             self.loss = SupervisedLoss()
@@ -123,20 +129,21 @@ class Loss(Module):
         elif kind == "Noise2Inverse":
             self.loss = Noise2InverseLoss()
         elif kind == "SURE":
-            self.loss = SURELoss(noise_level=noise_level,
-                                 cropped_div=sure_cropped_div,
-                                 averaged_cst=sure_averaged_cst,
-                                 margin=sure_margin)
+            self.loss = SURELoss(
+                noise_level=noise_level,
+                cropped_div=sure_cropped_div,
+                averaged_cst=sure_averaged_cst,
+                margin=sure_margin,
+            )
         elif kind == "Proposed":
-            self.loss = ProposedLoss(sure_alternative=sure_alternative,
-                                         method=method,
-                                         scale_antialias=scale_antialias,
-                                         noise_level=noise_level,
-                                         stop_gradient=stop_gradient,
-                                         sure_cropped_div=sure_cropped_div,
-                                         sure_averaged_cst=sure_averaged_cst,
-                                         sure_margin=sure_margin,
-                                         alpha_tradeoff=alpha_tradeoff)
+            self.loss = ProposedLoss(
+                noise_level=noise_level,
+                sure_cropped_div=sure_cropped_div,
+                sure_averaged_cst=sure_averaged_cst,
+                sure_margin=sure_margin,
+                method=method,
+                **blueprint[ProposedLoss.__name__],
+            )
         else:
             raise ValueError(f"Unknown loss kind: {kind}")
 
@@ -144,25 +151,17 @@ class Loss(Module):
         return self.loss(**kwargs)
 
 
-def get_loss(args=args, sure_margin):
-    """
-    Get the losses for a given training setting
+def get_loss(args, sure_margin):
+    blueprint = {}
 
-    :param str method: training method (i.e. proposed, sup, css, ei-rotate, ei-shift)
-    :param float noise_level: noise level (e.g. 5)
-    :param bool stop_gradient: stop the gradient for the proposed and EI methods
-    """
-    method = args.method
-    noise_level = args.noise_level
-    stop_gradient = args.stop_gradient
-    sure_alternative = args.sure_alternative
-    scale_antialias = args.scale_transforms_antialias
-    alpha_tradeoff = args.loss_alpha_tradeoff
-    sure_cropped_div = args.sure_cropped_div
-    sure_averaged_cst = args.sure_averaged_cst
+    blueprint[ProposedLoss.__name__] = {
+        "stop_gradient": args.stop_gradient,
+        "sure_alternative": args.sure_alternative,
+        "scale_antialias": args.scale_transforms_antialias,
+        "alpha_tradeoff": args.loss_alpha_tradeoff,
+    }
 
-    assert sure_alternative in [None, "r2r"]
-
+    # NOTE: kind is meant to become a command line argument
     if method == "sup":
         kind = "Supervised"
     elif method == "css":
@@ -176,15 +175,19 @@ def get_loss(args=args, sure_margin):
     else:
         raise ValueError(f"Unknown method: {method}")
 
-    loss = Loss(kind=kind,
-                sure_alternative=sure_alternative,
-                method=method,
-                scale_antialias=scale_antialias,
-                noise_level=noise_level,
-                stop_gradient=stop_gradient,
-                sure_cropped_div=sure_cropped_div,
-                sure_averaged_cst=sure_averaged_cst,
-                sure_margin=sure_margin,
-                alpha_tradeoff=alpha_tradeoff)
+    method = args.method
+    noise_level = args.noise_level
+    sure_cropped_div = args.sure_cropped_div
+    sure_averaged_cst = args.sure_averaged_cst
+
+    loss = Loss(
+        blueprint=blueprint,
+        kind=kind,
+        method=method,
+        noise_level=noise_level,
+        sure_cropped_div=sure_cropped_div,
+        sure_averaged_cst=sure_averaged_cst,
+        sure_margin=sure_margin,
+    )
 
     return loss
