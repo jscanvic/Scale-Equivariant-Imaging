@@ -123,35 +123,24 @@ class Loss(Module):
     ):
         super().__init__()
 
-        # NOTE: kind is meant to become a command line argument
         if method == "sup":
-            kind = "Supervised"
-        elif method == "css":
-            kind = "CSS"
-        elif method == "noise2inverse":
-            kind = "Noise2Inverse"
-        elif method == "sure":
-            kind = "SURE"
-        elif method in ["proposed", "ei-rotate", "ei-shift"]:
-            assert method is not in ["ei-rotate", "ei-shift"], f"Deprecated method: {method}"
-            kind = "Proposed"
-        else:
-            raise ValueError(f"Unknown method: {method}")
-
-        if kind == "Supervised":
             self.loss = SupervisedLoss()
-        elif kind == "CSS":
+        elif method == "css":
             self.loss = CSSLoss()
-        elif kind == "Noise2Inverse":
+        elif method == "noise2inverse":
             self.loss = Noise2InverseLoss()
-        elif kind == "SURE":
+        elif method == "sure":
             self.loss = SURELoss(
                 noise_level=noise_level,
                 cropped_div=sure_cropped_div,
                 averaged_cst=sure_averaged_cst,
                 margin=sure_margin,
             )
-        elif kind == "Proposed":
+        elif method in ["proposed", "ei-rotate", "ei-shift"]:
+            assert method not in [
+                "ei-rotate",
+                "ei-shift",
+            ], f"Deprecated method: {method}"
             self.loss = ProposedLoss(
                 noise_level=noise_level,
                 sure_cropped_div=sure_cropped_div,
@@ -182,6 +171,7 @@ def get_loss(args, sure_margin):
     noise_level = args.noise_level
     sure_cropped_div = args.sure_cropped_div
     sure_averaged_cst = args.sure_averaged_cst
+    sure_margin = sure_margin
 
     loss = Loss(
         blueprint=blueprint,
