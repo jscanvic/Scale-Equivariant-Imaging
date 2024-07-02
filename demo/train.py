@@ -77,7 +77,7 @@ model.train()
 
 dataset_root = "./datasets"
 gt_size = args.gt_size if args.resize_gt else None
-
+noise2inverse = args.method == "noise2inverse"
 training_dataset = TrainingDataset(
     dataset_root,
     physics,
@@ -85,8 +85,8 @@ training_dataset = TrainingDataset(
     download=args.download,
     device=args.device,
     dataset=args.dataset,
-    method=args.method,
     memoize_gt=args.memoize_gt,
+    noise2inverse=noise2inverse,
 )
 
 if args.partial_sure:

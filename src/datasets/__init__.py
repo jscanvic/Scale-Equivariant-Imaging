@@ -103,13 +103,13 @@ class TrainingDataset(BaseDataset):
         download=False,
         device="cpu",
         dataset="div2k",
-        method=None,
         memoize_gt=False,
-        split="train"
+        split="train",
+        noise2inverse=False,
     ):
         super().__init__()
         self.physics = physics
-        self.method = method
+        self.noise2inverse = noise2inverse
 
         assert dataset in ["div2k", "urban100", "ct"]
         self.ground_truth_dataset = GroundTruthDataset(
@@ -130,7 +130,7 @@ class TrainingDataset(BaseDataset):
 
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
-        if self.method == "noise2inverse":
+        if self.noise2inverse:
             T_n2i = Noise2InverseTransform(self.physics)
             x, y = T_n2i(x.unsqueeze(0), y.unsqueeze(0))
             x = x.squeeze(0)
@@ -155,15 +155,15 @@ class TestDataset(BaseDataset):
         root,
         split,
         physics,
-        resize=None,
-        device="cpu",
-        download=False,
-        dataset="div2k",
-        method=None,
-        memoize_gt=False,
+        resize,
+        device,
+        download,
+        dataset,
+        memoize_gt,
+        noise2inverse,
     ):
         self.physics = physics
-        self.method = method
+        self.noise2inverse = noise2inverse
 
         self.ground_truth_dataset = GroundTruthDataset(
             datasets_dir=root,
@@ -181,11 +181,12 @@ class TestDataset(BaseDataset):
         torch.manual_seed(0)
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
-        # bug fix: make y have even height and width
-        if isinstance(self.physics, Blur) and self.method == "noise2inverse":
-            w = 2 * (y.shape[1] // 2)
-            h = 2 * (y.shape[2] // 2)
-            y = y[:, :w, :h]
+        if self.noise2inverse:
+            # bug fix: make y have even height and width
+            if isinstance(self.physics, Blur):
+                w = 2 * (y.shape[1] // 2)
+                h = 2 * (y.shape[2] // 2)
+                y = y[:, :w, :h]
 
         # crop x to make its dimensions be a multiple of u's dimensions
         if x.shape != y.shape:

@@ -81,7 +81,6 @@ if args.weights is not None:
     model.load_state_dict(weights)
 
 gt_size = args.gt_size if args.resize_gt else None
-method = "noise2inverse" if args.noise2inverse else None
 dataset = TestDataset(
     root="./datasets",
     split=args.split,
@@ -90,7 +89,8 @@ dataset = TestDataset(
     device=args.device,
     download=args.download,
     dataset=args.dataset,
-    method=method,
+    memoize_gt=False,
+    noise2inverse=args.noise2inverse,
 )
 
 psnr_list = []
