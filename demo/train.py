@@ -181,7 +181,7 @@ for epoch in range(epochs):
         elif args.dataset == "ct":
             checkpoint_interval = 50
     if (epoch % checkpoint_interval == 0) or (epoch == epochs - 1):
-        checkpoint_path = f"{args.out_dir}/checkpoints/ckp_{epoch:03}.pt"
+        checkpoint_path = f"{args.out_dir}/checkpoints/ckp_{epoch+1:03}.pt"
         save_training_state(epoch, model, optimizer, scheduler, checkpoint_path)
 
 # save the weights after training completion

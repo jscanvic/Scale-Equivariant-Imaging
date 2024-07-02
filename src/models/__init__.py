@@ -4,6 +4,7 @@ from torch.nn.parallel import DataParallel
 from torch.nn import Module
 
 # NOTE: The file structure should be way simpler.
+from .convolutional import ConvNeuralNetwork
 from .pnp import PnPModel
 from .dip import DeepImagePrior
 from .bm3d_deblurring import BM3D
@@ -73,6 +74,10 @@ def get_model(
             resi_connection="1conv",
             pretrained=None,
         )
+    elif kind == "CNN":
+        upsampling_rate = sr_factor if task == "sr" else 1
+        model = ConvNeuralNetwork(in_channels=3,
+                                  upsampling_rate=upsampling_rate)
     elif kind == "dip":
         model = DeepImagePrior(
             physics=physics, sr_factor=sr_factor, iterations=dip_iterations
