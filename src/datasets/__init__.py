@@ -107,7 +107,6 @@ class Dataset(BaseDataset):
         physics,
         css,
         noise2inverse,
-        fixed_seed,
         split,
         resize,
         device,
@@ -118,7 +117,9 @@ class Dataset(BaseDataset):
         self.physics = physics
         self.css = css
         self.noise2inverse = noise2inverse
-        self.fixed_seed = fixed_seed
+        # NOTE: the measurements should always be deterministic except for
+        # supervised training
+        self.deterministic_measurements = purpose == "test"
 
         self.ground_truth_dataset = GroundTruthDataset(
             device=device,
@@ -137,7 +138,8 @@ class Dataset(BaseDataset):
         if self.css:
             x = self.physics(x.unsqueeze(0)).squeeze(0)
 
-        if self.fixed_seed:
+        if self.deterministic_measurements:
+            # NOTE: the seed should be different for every entry
             torch.manual_seed(0)
 
         y = self.physics(x.unsqueeze(0)).squeeze(0)
@@ -183,15 +185,15 @@ def get_dataset(args, purpose, physics, device):
     if purpose == "test":
         noise2inverse = args.noise2inverse
         css = False
-        fixed_seed = True
         split = args.split
         memoize_gt = False
     elif purpose == "train":
         noise2inverse = args.method == "noise2inverse"
         css = args.method == "css"
-        fixed_seed = False
         split = "train"
         memoize_gt = args.memoize_gt
+    else:
+        raise ValueError(f"Unknown purpose: {purpose}")
 
     blueprint = {}
 
@@ -208,7 +210,6 @@ def get_dataset(args, purpose, physics, device):
             purpose=purpose,
             css=css,
             noise2inverse=noise2inverse,
-            fixed_seed=fixed_seed,
             resize=resize,
             split=split,
             memoize_gt=memoize_gt,
