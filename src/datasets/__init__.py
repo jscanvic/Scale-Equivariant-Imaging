@@ -20,7 +20,7 @@ class GroundTruthDataset(BaseDataset):
         self.datasets_dir = datasets_dir
         self.dataset = dataset
         self.split = split
-        self.resize = resize
+        self.size = resize
         self.device = device
         self.memoize_gt = memoize_gt
 
@@ -73,10 +73,10 @@ class GroundTruthDataset(BaseDataset):
 
         x = xs[index]
         x = x.to(self.device)
-        if self.resize is not None:
+        if self.size is not None:
             x = TF.resize(
                 x,
-                size=self.resize,
+                size=self.size,
                 interpolation=InterpolationMode.BICUBIC,
                 antialias=True,
             )
@@ -133,7 +133,6 @@ class Dataset(BaseDataset):
         css,
         noise2inverse,
         split,
-        resize,
         device,
         memoize_gt,
     ):
@@ -149,7 +148,6 @@ class Dataset(BaseDataset):
         self.ground_truth_dataset = GroundTruthDataset(
             device=device,
             split=split,
-            resize=resize,
             memoize_gt=memoize_gt,
             **blueprint[GroundTruthDataset.__name__],
         )
@@ -213,7 +211,6 @@ class Dataset(BaseDataset):
 
 
 def get_dataset(args, purpose, physics, device):
-    resize = args.gt_size if args.resize_gt else None
     if purpose == "test":
         noise2inverse = args.noise2inverse
         css = False
@@ -233,6 +230,7 @@ def get_dataset(args, purpose, physics, device):
             "datasets_dir": args.datasets_dir,
             "dataset": args.dataset,
             "download": args.download,
+            "size": args.GroundTruthDataset__size,
         }
 
     blueprint[PrepareTrainingPairs.__name__] = {
@@ -247,7 +245,6 @@ def get_dataset(args, purpose, physics, device):
             purpose=purpose,
             css=css,
             noise2inverse=noise2inverse,
-            resize=resize,
             split=split,
             memoize_gt=memoize_gt,
     )
