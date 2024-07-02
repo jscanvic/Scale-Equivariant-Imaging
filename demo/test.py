@@ -21,7 +21,6 @@ np.random.seed(0)
 parser = DefaultArgParser()
 parser.add_argument("--weights", type=str)
 parser.add_argument("--split", type=str, default="val")
-parser.add_argument("--dataset_max_size", type=int, default=None)
 parser.add_argument("--save_images", action="store_true")
 parser.add_argument("--dataset_offset", type=int, default=None)
 parser.add_argument("--indices", type=str, default=None)
@@ -73,7 +72,9 @@ if args.weights is not None:
         weights = torch.load(args.weights, map_location=args.device)
     else:
         weights_url = f"https://huggingface.co/jscanvic/scale-equivariant-imaging/resolve/main/{args.weights}.pt?download=true"
-        weights = torch.hub.load_state_dict_from_url(weights_url, map_location=args.device)
+        weights = torch.hub.load_state_dict_from_url(
+            weights_url, map_location=args.device
+        )
 
     if "params" in weights:
         weights = weights["params"]
@@ -90,7 +91,6 @@ dataset = TestDataset(
     device=args.device,
     download=args.download,
     dataset=args.dataset,
-    max_size=args.dataset_max_size,
     offset=args.dataset_offset,
     method=method,
 )
@@ -115,7 +115,8 @@ if args.save_psf:
 
 # testing loop
 if args.indices is None:
-    indices = range(len(dataset))
+    num_indices = max(len(dataset), 100)
+    indices = range(num_indices)
 else:
     indices = (int(i) for i in args.indices.split(","))
 
@@ -154,6 +155,7 @@ for i in tqdm(indices):
     ssim_val = ssim_fn(x_hat, x).item()
 
     from math import isnan
+
     if isnan(psnr_val) or isnan(ssim_val):
         breakpoint()
 

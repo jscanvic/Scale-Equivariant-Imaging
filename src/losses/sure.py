@@ -10,9 +10,16 @@ def mc_div(y1, y, f, physics, tau, margin=0):
         b = torch.randn_like(y)
     else:
         # shape of the inner part of the measurements
-        ip_shape = (y.size(0), y.size(1), y.size(2) - 2 * margin, y.size(3) - 2 * margin)
+        ip_shape = (
+            y.size(0),
+            y.size(1),
+            y.size(2) - 2 * margin,
+            y.size(3) - 2 * margin,
+        )
         b = torch.zeros_like(y)
-        b[:, :, margin:-margin, margin:-margin] = torch.randn(*ip_shape, device=y.device, dtype=y.dtype)
+        b[:, :, margin:-margin, margin:-margin] = torch.randn(
+            *ip_shape, device=y.device, dtype=y.dtype
+        )
 
     y2 = physics.A(f(y + b * tau, physics))
 
@@ -26,7 +33,9 @@ def mc_div(y1, y, f, physics, tau, margin=0):
 
 
 class SureGaussianLoss(nn.Module):
-    def __init__(self, sigma, tau=1e-2, margin=0, cropped_div=False, averaged_cst=False):
+    def __init__(
+        self, sigma, tau=1e-2, margin=0, cropped_div=False, averaged_cst=False
+    ):
         super(SureGaussianLoss, self).__init__()
         self.name = "SureGaussian"
         self.sigma2 = sigma**2
@@ -48,7 +57,7 @@ class SureGaussianLoss(nn.Module):
 
         mse = y1 - y
         if self.margin != 0:
-            mse = mse[:, :, self.margin:-self.margin, self.margin:-self.margin]
+            mse = mse[:, :, self.margin : -self.margin, self.margin : -self.margin]
         mse = mse.pow(2).mean()
 
         if self.averaged_cst:

@@ -23,11 +23,17 @@ from settings import DefaultArgParser
 
 parser = DefaultArgParser()
 parser.add_argument("--method", type=str)
-parser.add_argument("--ProposedLoss__transforms", type=str, default="Scaling_Transforms")
-parser.add_argument("--ProposedLoss__stop_gradient", action=BooleanOptionalAction, default=True)
+parser.add_argument(
+    "--ProposedLoss__transforms", type=str, default="Scaling_Transforms"
+)
+parser.add_argument(
+    "--ProposedLoss__stop_gradient", action=BooleanOptionalAction, default=True
+)
 parser.add_argument("--ProposedLoss__sure_alternative", type=str, default=None)
 parser.add_argument("--ProposedLoss__alpha_tradeoff", type=float, default=1.0)
-parser.add_argument("--ProposedLoss__scale_antialias", action=BooleanOptionalAction, default=False)
+parser.add_argument(
+    "--ProposedLoss__scale_antialias", action=BooleanOptionalAction, default=False
+)
 parser.add_argument("--out_dir", type=str)
 parser.add_argument("--data_parallel_devices", type=str, default=None)
 parser.add_argument("--batch_size", type=int, default=None)
@@ -90,6 +96,7 @@ if args.partial_sure:
         sure_margin = args.sure_margin
     elif args.task == "deblurring":
         from physics import Blur
+
         assert isinstance(physics, Blur)
 
         kernel = physics.filter
@@ -155,7 +162,9 @@ for epoch in range(epochs):
     epochs_ndigits = len(str(int(epochs)))
     current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     epoch_training_loss = training_loss_metric.compute().item()
-    print(f"\t{current_timestamp}\t[{epoch + 1:{epochs_ndigits}d}/{epochs}]\tTraining_Loss: {epoch_training_loss:.2e}")
+    print(
+        f"\t{current_timestamp}\t[{epoch + 1:{epochs_ndigits}d}/{epochs}]\tTraining_Loss: {epoch_training_loss:.2e}"
+    )
 
     # save the training state regularly and after training completion
     if args.checkpoint_interval is not None:

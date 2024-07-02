@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch.nn import Module
 from deepinv.loss.metric import mse
 
+
 class R2RLoss(nn.Module):
     def __init__(self, metric=torch.nn.MSELoss(), eta=0.1, alpha=0.5):
         super(R2RLoss, self).__init__()

@@ -11,10 +11,7 @@ class DPS(Module):
         super().__init__()
         self.physics = physics
         if "model" not in kwargs:
-            denoiser = DRUNet(
-                    pretrained="download",
-                    device=kwargs.get("device")
-                )
+            denoiser = DRUNet(pretrained="download", device=kwargs.get("device"))
             kwargs["model"] = denoiser
         if "data_fidelity" not in kwargs:
             kwargs["data_fidelity"] = L2()

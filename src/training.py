@@ -8,6 +8,7 @@ from models import get_model_state_dict
 def get_model_state_dict(model):
     return get_model_state_dict(model)
 
+
 def save_training_state(epoch, model, optimizer, scheduler, state_path):
     """
     Save the training state to a file

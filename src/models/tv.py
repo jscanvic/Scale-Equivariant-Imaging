@@ -5,7 +5,9 @@ from deepinv.optim.optimizers import optim_builder
 
 
 class TV(Module):
-    def __init__(self, physics, lambd, stepsize=1.0, max_iter=300, n_it_max=20, early_stop=True):
+    def __init__(
+        self, physics, lambd, stepsize=1.0, max_iter=300, n_it_max=20, early_stop=True
+    ):
         super().__init__()
 
         self.physics = physics
