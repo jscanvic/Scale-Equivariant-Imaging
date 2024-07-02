@@ -91,6 +91,9 @@ dataset = TestDataset(
     dataset=args.dataset,
     memoize_gt=False,
     noise2inverse=args.noise2inverse,
+    css=False,
+    fixed_seed=True,
+    purpose="test",
 )
 
 psnr_list = []
