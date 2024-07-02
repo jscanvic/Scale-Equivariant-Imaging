@@ -100,7 +100,6 @@ class TrainingDataset(BaseDataset):
         root,
         physics,
         resize,
-        css=False,
         download=False,
         device="cpu",
         dataset="div2k",
@@ -110,7 +109,6 @@ class TrainingDataset(BaseDataset):
     ):
         super().__init__()
         self.physics = physics
-        self.css = css
         self.method = method
 
         assert dataset in ["div2k", "urban100", "ct"]
@@ -127,7 +125,7 @@ class TrainingDataset(BaseDataset):
     def __getitem__(self, index):
         x = self.ground_truth_dataset[index]
 
-        if self.css:
+        if method == "css":
             x = self.physics(x.unsqueeze(0)).squeeze(0)
 
         y = self.physics(x.unsqueeze(0)).squeeze(0)
@@ -197,6 +195,7 @@ class TestDataset(BaseDataset):
             else:
                 f = 1
             x = TF.crop(x, top=0, left=0, height=h * f, width=w * f)
+
         return x, y
 
     def __len__(self):

@@ -76,14 +76,12 @@ model.to(args.device)
 model.train()
 
 dataset_root = "./datasets"
-css = args.method == "css"
 gt_size = args.gt_size if args.resize_gt else None
 
 training_dataset = TrainingDataset(
     dataset_root,
     physics,
     resize=gt_size,
-    css=css,
     download=args.download,
     device=args.device,
     dataset=args.dataset,
