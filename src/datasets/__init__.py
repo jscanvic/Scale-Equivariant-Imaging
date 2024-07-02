@@ -106,28 +106,22 @@ class TrainingDataset(BaseDataset):
         dataset="div2k",
         method=None,
         memoize_gt=False,
+        split="train"
     ):
         super().__init__()
-        self.split = "train"
-        self.root = root
         self.physics = physics
-        self.resize = resize
         self.css = css
-        self.device = device
         self.method = method
-        self.memoize_gt = memoize_gt
 
         assert dataset in ["div2k", "urban100", "ct"]
-        self.dataset = dataset
-
         self.ground_truth_dataset = GroundTruthDataset(
-            datasets_dir=self.root,
-            dataset=self.dataset,
-            split=self.split,
+            datasets_dir=root,
+            dataset=dataset,
+            split=split,
             download=download,
-            resize=self.resize,
-            device=self.device,
-            memoize_gt=self.memoize_gt,
+            resize=resize,
+            device=device,
+            memoize_gt=memoize_gt,
         )
 
     def __getitem__(self, index):
@@ -171,24 +165,18 @@ class TestDataset(BaseDataset):
         method=None,
         memoize_gt=False,
     ):
-        self.split = split
-        self.resize = resize
-        self.root = root
         self.physics = physics
-        self.device = device
-        self.dataset = dataset
         self.offset = offset
         self.method = method
-        self.memoize_gt = memoize_gt
 
         self.ground_truth_dataset = GroundTruthDataset(
-            datasets_dir=self.root,
-            dataset=self.dataset,
-            split=self.split,
+            datasets_dir=root,
+            dataset=dataset,
+            split=split,
             download=download,
-            resize=self.resize,
-            device=self.device,
-            memoize_gt=self.memoize_gt,
+            resize=resize,
+            device=device,
+            memoize_gt=memoize_gt,
         )
 
     def __getitem__(self, index):
