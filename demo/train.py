@@ -22,6 +22,7 @@ from noise2inverse import Noise2InverseModel
 from settings import DefaultArgParser
 
 parser = DefaultArgParser()
+# NOTE: Some of these arguments should be better tied to their respective class.
 parser.add_argument("--method", type=str)
 parser.add_argument(
     "--ProposedLoss__transforms", type=str, default="Scaling_Transforms"
@@ -36,7 +37,7 @@ parser.add_argument(
 )
 parser.add_argument("--out_dir", type=str)
 parser.add_argument("--data_parallel_devices", type=str, default=None)
-parser.add_argument("--batch_size", type=int, default=None)
+parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--epochs", type=int, default=None)
 parser.add_argument("--checkpoint_interval", type=int, default=None)
 parser.add_argument("--memoize_gt", action=BooleanOptionalAction, default=True)
@@ -47,12 +48,15 @@ parser.add_argument("--partial_sure_sr", action=BooleanOptionalAction, default=F
 parser.add_argument("--sure_margin", type=int, default=None)
 args = parser.parse_args()
 
+# NOTE: This should ideally be dealt with in some get_sth function.
 data_parallel_devices = (
     args.data_parallel_devices.split(",")
     if args.data_parallel_devices is not None
     else None
 )
 
+# NOTE: This should ideally take less arguments and let the function extract
+# what it needs from the args directly.
 physics = get_physics(
     task=args.task,
     noise_level=args.noise_level,
@@ -62,6 +66,7 @@ physics = get_physics(
     sr_filter=args.sr_filter,
 )
 
+# NOTE: This should ideally take less arguments.
 model = get_model(
     args=args,
     physics=physics,
@@ -80,6 +85,7 @@ dataset = get_dataset(args=args,
                       physics=physics,
                       device=args.device)
 
+# NOTE: This should be in the loss itself.
 if args.partial_sure:
     if args.sure_margin is not None:
         sure_margin = args.sure_margin
@@ -104,15 +110,18 @@ else:
 
 loss = get_loss(args=args, sure_margin=sure_margin)
 
-batch_size = args.batch_size or 8
-training_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
+# NOTE: It'd be better if the learning rate was the same for all tasks.
 lr = 2e-4 if args.task == "sr" else 5e-4
+# NOTE: It'd be better to use the default values for Adam.
 optimizer = Adam(model.parameters(), lr=lr, betas=(0.9, 0.99))
+# NOTE: It'd be better to use a scheduler with delayed linear decay.
 scheduler = MultiStepLR(optimizer, milestones=[250, 400, 450, 475], gamma=0.5)
 
-training_loss_metric = MeanMetric()
 
+# NOTE: It'd be better to use approximately the same number of epochs in all
+# experiments.
 if args.epochs is None:
     epochs = 500 if args.dataset != "ct" else 100
     if args.dataset == "urban100":
@@ -121,23 +130,29 @@ else:
     epochs = args.epochs
 
 # training loop
+training_loss_metric = MeanMetric()
 for epoch in range(epochs):
     training_loss_metric.reset()
 
     # stochastic gradient descent step
-    for x, y in training_dataloader:
+    for x, y in dataloader:
         x, y = x.to(args.device), y.to(args.device)
+
+        # NOTE: It'd be great to remove this.
         if args.dataset == "ct":
             assert x.shape[1] == 3
             assert y.shape[1] == 3
 
         optimizer.zero_grad()
 
+        # NOTE: This should ideally be in the model or in the loss.
         if args.method == "proposed" and args.sure_alternative == "r2r":
             x_hat = None
         else:
             x_hat = model(y)
 
+        # NOTE: It might be better to avoid calling the model outside the loss
+        # function.
         training_loss = loss(x=x, x_net=x_hat, y=y, physics=physics, model=model)
 
         training_loss.backward()
@@ -155,6 +170,7 @@ for epoch in range(epochs):
         f"\t{current_timestamp}\t[{epoch + 1:{epochs_ndigits}d}/{epochs}]\tTraining_Loss: {epoch_training_loss:.2e}"
     )
 
+    # NOTE: This should be simpler.
     # save the training state regularly and after training completion
     if args.checkpoint_interval is not None:
         checkpoint_interval = args.checkpoint_interval

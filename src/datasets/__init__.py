@@ -135,6 +135,8 @@ class Dataset(BaseDataset):
     def __getitem__(self, index):
         x = self.ground_truth_dataset[index]
 
+        # NOTE: This should ideally be done in the class CSSLoss instead but
+        # the border effects in the current implementation make it challenging.
         if self.css:
             x = self.physics(x.unsqueeze(0)).squeeze(0)
 
@@ -145,12 +147,21 @@ class Dataset(BaseDataset):
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
         if self.purpose == "train":
+            # NOTE: This should ideally be done in the model.
             if self.noise2inverse:
                 T_n2i = Noise2InverseTransform(self.physics)
                 x, y = T_n2i(x.unsqueeze(0), y.unsqueeze(0))
                 x = x.squeeze(0)
                 y = y.squeeze(0)
 
+            # NOTE: This should ideally either be done in the model, or not at
+            # all.
+
+            # NOTE: Getting small random crops should be optional and it should
+            # be possible to use big crops instead, e.g. to make images
+            # square-shaped which would enable stacking in the batch dimension.
+
+            # Prepare a pair of crops for training.
             if isinstance(self.physics, Downsampling):
                 xy_size_ratio = self.physics.factor
             else:
@@ -159,6 +170,7 @@ class Dataset(BaseDataset):
             T_crop = CropPair("random", 48)
             x, y = T_crop(x, y, xy_size_ratio=xy_size_ratio)
         elif self.purpose == "test":
+            # NOTE: This should ideally be removed.
             if self.noise2inverse:
                 # bug fix: make y have even height and width
                 if isinstance(self.physics, Blur):
@@ -166,6 +178,7 @@ class Dataset(BaseDataset):
                     h = 2 * (y.shape[2] // 2)
                     y = y[:, :w, :h]
 
+            # NOTE: This should ideally be removed.
             # crop x to make its dimensions be a multiple of u's dimensions
             if x.shape != y.shape:
                 h, w = y.shape[1], y.shape[2]

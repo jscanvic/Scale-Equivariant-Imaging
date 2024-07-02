@@ -3,6 +3,7 @@ from torch import nn
 from torch.nn.parallel import DataParallel
 from torch.nn import Module
 
+# NOTE: The file structure should be way simpler.
 from .pnp import PnPModel
 from .dip import DeepImagePrior
 from .bm3d_deblurring import BM3D
@@ -12,11 +13,14 @@ from .dps import DPS
 from .tv import TV
 
 
+# NOTE: This should not exist!
 class Identity(Module):
     def forward(self, y):
         return y
 
 
+# NOTE: This should ideally be a method of the model itself with an
+# accompanying function to load the weights back in.
 def get_model_state_dict(model):
     if not isinstance(model, DataParallel):
         model_state_dict = model.state_dict()
@@ -25,6 +29,8 @@ def get_model_state_dict(model):
     return model_state_dict
 
 
+# NOTE: There should be a Model class and the function get_model would return
+# an instance of it.
 def get_model(
     args,
     physics=None,
