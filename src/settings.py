@@ -11,6 +11,7 @@ class DefaultArgParser(argparse.ArgumentParser):
         self.add_argument("--sr_factor", type=int, default=None)
         self.add_argument("--noise_level", type=int, default=5)
         self.add_argument("--dataset", type=str, default="div2k")
+        self.add_argument("--datasets_dir", type=str, default="./datasets")
         self.add_argument("--resize_gt", action=BooleanOptionalAction, default=True)
         self.add_argument("--gt_size", type=int, default=256)
         self.add_argument("--download", action=BooleanOptionalAction, default=False)
