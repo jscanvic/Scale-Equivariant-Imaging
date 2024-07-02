@@ -1,19 +1,27 @@
 import argparse
 
+from argparse import ArgumentParser, BooleanOptionalAction
 
-class DefaultArgParser(argparse.ArgumentParser):
+
+class DefaultArgParser(ArgumentParser):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.add_argument("--device", type=str, default="cpu")
         self.add_argument("--task", type=str)
         self.add_argument("--kernel", type=str, default=None)
         self.add_argument("--sr_factor", type=int, default=None)
-        self.add_argument("--sr_factor", type=int, default=None)
+        self.add_argument("--sr_filter", type=str, default="bicubic_torch")
         self.add_argument("--noise_level", type=int, default=5)
-        self.add_argument("--GroundTruthDataset__dataset", type=str, default="div2k")
+        self.add_argument("--dataset", type=str, default="div2k")
         self.add_argument("--GroundTruthDataset__datasets_dir", type=str, default="./datasets")
         self.add_argument("--GroundTruthDataset__download", action=BooleanOptionalAction, default=False)
-        group = self.mutually_exclusive_group()
+        group = self.add_mutually_exclusive_group()
         group.add_argument("--GroundTruthDataset__size", type=int, default=256)
         group.add_argument("--GroundTruthDataset__no_resize", action="store_const", dest="GroundTruthDataset__size", const=None)
+        # NOTE: This should ideally be in the training script but it is easier
+        # to keep it right here as the preparation of training pairs is
+        # involved in the class Dataset (which itself should ideally be
+        # elsewhere)
+        self.add_argument("--PrepareTrainingPairs__crop_size", type=int, default=48)
+        self.add_argument("--PrepareTrainingPairs__crop_location", type=str, default="random")
         self.add_argument("--model_kind", type=str, default="swinir")

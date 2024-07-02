@@ -123,7 +123,7 @@ class Loss(Module):
     ):
         super().__init__()
 
-        if method == "sup":
+        if method == "supervised":
             self.loss = SupervisedLoss()
         elif method == "css":
             self.loss = CSSLoss()
@@ -150,7 +150,7 @@ class Loss(Module):
                 **blueprint[ProposedLoss.__name__],
             )
         else:
-            raise ValueError(f"Unknown loss kind: {kind}")
+            raise ValueError(f"Unknwon method: {method}")
 
     def forward(self, **kwargs):
         return self.loss(**kwargs)
@@ -162,7 +162,7 @@ def get_loss(args, sure_margin):
     blueprint[ProposedLoss.__name__] = {
         "stop_gradient": args.ProposedLoss__stop_gradient,
         "sure_alternative": args.ProposedLoss__sure_alternative,
-        "scale_antialias": args.ProposedLoss_scale_antialias,
+        "scale_antialias": args.ProposedLoss__scale_antialias,
         "alpha_tradeoff": args.ProposedLoss__alpha_tradeoff,
         "transforms": args.ProposedLoss__transforms,
     }

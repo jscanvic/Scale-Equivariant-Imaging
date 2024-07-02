@@ -68,6 +68,7 @@ class Downsampling(LinearPhysics):
 
     def A(self, x):
         if self.filter == "bicubic":
+            # NOTE: This is deprecated.
             y = imresize(x, scale=1 / self.factor, antialiasing=self.antialias)
         elif self.filter == "bicubic_torch":
             y = interpolate(x, scale_factor=1 / self.factor, mode="bicubic")

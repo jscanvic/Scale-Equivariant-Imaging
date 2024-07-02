@@ -2,11 +2,11 @@ import os
 
 import torch
 
-from models import get_model_state_dict
+from models import get_model_state_dict as __get_model_state_dict
 
 
 def get_model_state_dict(model):
-    return get_model_state_dict(model)
+    return __get_model_state_dict(model)
 
 
 def save_training_state(epoch, model, optimizer, scheduler, state_path):

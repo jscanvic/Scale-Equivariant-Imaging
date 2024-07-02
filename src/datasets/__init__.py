@@ -14,13 +14,13 @@ from .urban100 import Urban100
 
 class GroundTruthDataset(BaseDataset):
     def __init__(
-        self, datasets_dir, dataset, split, download, resize, device, memoize_gt
+        self, datasets_dir, dataset, split, download, size, device, memoize_gt
     ):
         super().__init__()
         self.datasets_dir = datasets_dir
         self.dataset = dataset
         self.split = split
-        self.size = resize
+        self.size = size
         self.device = device
         self.memoize_gt = memoize_gt
 
@@ -120,7 +120,7 @@ class PrepareTrainingPairs(Module):
         else:
             xy_size_ratio = 1
 
-        T_crop = CropPair(self.crop_size, self.crop_size)
+        T_crop = CropPair(location=self.crop_location, size=self.crop_size)
         return T_crop(x, y, xy_size_ratio=xy_size_ratio)
 
 
@@ -227,8 +227,11 @@ def get_dataset(args, purpose, physics, device):
     blueprint = {}
 
     blueprint[GroundTruthDataset.__name__] = {
+            # NOTE: This argument should be named according to the class
+            # GroundTruthDataset but happens to be used (wrongly) elsewhere and
+            # this must be dealt with first
+            "dataset": args.dataset,
             "datasets_dir": args.GroundTruthDataset__datasets_dir,
-            "dataset": args.GroundTruthDataset__dataset,
             "download": args.GroundTruthDataset__download,
             "size": args.GroundTruthDataset__size,
         }
