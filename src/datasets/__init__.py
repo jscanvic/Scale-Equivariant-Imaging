@@ -121,36 +121,16 @@ class Dataset(BaseDataset):
         self.css = css
         self.noise2inverse = noise2inverse
         self.fixed_seed = fixed_seed
-        self.datasets_dir = datasets_dir
-        self.dataset = dataset
-        self.split = split
-        self.download = download
-        self.resize = resize
-        self.device = device
-        self.memoize_gt = memoize_gt
 
-        if purpose == "train":
-            self.ground_truth_dataset = GroundTruthDataset(
-                datasets_dir=datasets_dir,
-                dataset=dataset,
-                split=split,
-                download=download,
-                resize=resize,
-                device=device,
-                memoize_gt=memoize_gt,
-            )
-        elif purpose == "test":
-            self.ground_truth_dataset = GroundTruthDataset(
-                datasets_dir=datasets_dir,
-                dataset=dataset,
-                split=split,
-                download=download,
-                resize=resize,
-                device=device,
-                memoize_gt=memoize_gt,
-            )
-        else:
-            raise ValueError(f"Unknown purpose: {purpose}")
+        self.ground_truth_dataset = GroundTruthDataset(
+            datasets_dir=datasets_dir,
+            dataset=dataset,
+            split=split,
+            download=download,
+            resize=resize,
+            device=device,
+            memoize_gt=memoize_gt,
+        )
 
     def __len__(self):
         return len(self.ground_truth_dataset)
@@ -166,7 +146,6 @@ class Dataset(BaseDataset):
 
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
-        assert self.purpose in ["train", "test"]
         if self.purpose == "train":
             if self.noise2inverse:
                 T_n2i = Noise2InverseTransform(self.physics)
@@ -197,5 +176,7 @@ class Dataset(BaseDataset):
                 else:
                     f = 1
                 x = TF.crop(x, top=0, left=0, height=h * f, width=w * f)
+        else:
+            raise ValueError(f"Unknown purpose: {self.purpose}")
 
         return x, y
