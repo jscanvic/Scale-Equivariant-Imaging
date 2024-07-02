@@ -14,3 +14,4 @@ class DefaultArgParser(argparse.ArgumentParser):
         self.add_argument("--resize_gt", action=BooleanOptionalAction, default=True)
         self.add_argument("--gt_size", type=int, default=256)
         self.add_argument("--download", action=BooleanOptionalAction, default=False)
+        self.add_argument("--model_kind", type=str, default="swinir")

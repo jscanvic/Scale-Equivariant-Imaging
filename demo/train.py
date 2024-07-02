@@ -58,12 +58,14 @@ physics = get_physics(
 )
 
 model = get_model(
-    args.task,
-    args.sr_factor,
+    args=args,
     physics=physics,
     device=args.device,
-    kind="swinir",
+    kind=args.model_kind,
     data_parallel_devices=data_parallel_devices,
+    dip_iterations=None,
+    tv_lambd=None,
+    tv_max_iter=None,
 )
 model.to(args.device)
 model.train()

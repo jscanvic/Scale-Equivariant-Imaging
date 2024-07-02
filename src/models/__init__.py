@@ -18,9 +18,7 @@ class Identity(Module):
 
 
 def get_model(
-    task,
-    sr_factor=None,
-    noise_level=None,
+    args,
     physics=None,
     channels=3,
     device="cpu",
@@ -30,12 +28,10 @@ def get_model(
     tv_lambd=None,
     tv_max_iter=None,
 ):
-    """
-    Get a model with randomly initialized weights for the given task
+    task = args.task
+    sr_factor = args.sr_factor
+    noise_level = args.noise_level
 
-    :param task: task to perform (i.e. sr or denoising)
-    :param sr_factor: super-resolution factor (optional)
-    """
     if kind == "swinir":
         upscale = sr_factor if task == "sr" else 1
         upsampler = "pixelshuffle" if task == "sr" else None

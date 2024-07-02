@@ -21,7 +21,6 @@ np.random.seed(0)
 parser = DefaultArgParser()
 parser.add_argument("--weights", type=str)
 parser.add_argument("--split", type=str, default="val")
-parser.add_argument("--model_kind", type=str, default="swinir")
 parser.add_argument("--dataset_max_size", type=int, default=None)
 parser.add_argument("--save_images", action="store_true")
 parser.add_argument("--dataset_offset", type=int, default=None)
@@ -57,12 +56,11 @@ else:
         dip_iterations = 1000
 
 model = get_model(
-    args.task,
-    args.sr_factor,
-    noise_level=args.noise_level,
+    args=args,
     physics=physics,
     device=args.device,
     kind=args.model_kind,
+    data_parallel_devices=None,
     dip_iterations=dip_iterations,
     tv_lambd=args.tv_lambd,
     tv_max_iter=args.tv_max_iter,
