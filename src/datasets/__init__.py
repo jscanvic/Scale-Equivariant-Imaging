@@ -12,7 +12,9 @@ from .urban100 import Urban100
 
 
 class GroundTruthDataset(BaseDataset):
-    def __init__(self, datasets_dir, dataset, split, download, resize, device, memoize_gt):
+    def __init__(
+        self, datasets_dir, dataset, split, download, resize, device, memoize_gt
+    ):
         super().__init__()
         self.datasets_dir = datasets_dir
         self.dataset = dataset
@@ -96,21 +98,23 @@ class GroundTruthDataset(BaseDataset):
             raise ValueError(f"Unknown dataset: {self.dataset}")
         return size
 
+
 class Dataset(BaseDataset):
-    def __init__(self,
-                 purpose,
-                 physics,
-                 css,
-                 noise2inverse,
-                 fixed_seed,
-                 datasets_dir,
-                 dataset,
-                 split,
-                 download,
-                 resize,
-                 device,
-                 memoize_gt,
-                 ):
+    def __init__(
+        self,
+        purpose,
+        physics,
+        css,
+        noise2inverse,
+        fixed_seed,
+        datasets_dir,
+        dataset,
+        split,
+        download,
+        resize,
+        device,
+        memoize_gt,
+    ):
         super().__init__()
         self.purpose = purpose
         self.physics = physics
@@ -215,19 +219,19 @@ class TrainingDataset(BaseDataset):
     ):
         super().__init__()
         self.dataset = Dataset(
-                purpose=purpose,
-                physics=physics,
-                css=css,
-                noise2inverse=noise2inverse,
-                fixed_seed=fixed_seed,
-                datasets_dir=root,
-                dataset=dataset,
-                split=split,
-                download=download,
-                resize=resize,
-                device=device,
-                memoize_gt=memoize_gt,
-                )
+            purpose=purpose,
+            physics=physics,
+            css=css,
+            noise2inverse=noise2inverse,
+            fixed_seed=fixed_seed,
+            datasets_dir=root,
+            dataset=dataset,
+            split=split,
+            download=download,
+            resize=resize,
+            device=device,
+            memoize_gt=memoize_gt,
+        )
 
     def __len__(self):
         return len(self.dataset)
@@ -254,19 +258,19 @@ class TestDataset(BaseDataset):
     ):
         super().__init__()
         self.dataset = Dataset(
-                purpose=purpose,
-                physics=physics,
-                css=css,
-                noise2inverse=noise2inverse,
-                fixed_seed=fixed_seed,
-                datasets_dir=root,
-                dataset=dataset,
-                split=split,
-                download=download,
-                resize=resize,
-                device=device,
-                memoize_gt=memoize_gt,
-                )
+            purpose=purpose,
+            physics=physics,
+            css=css,
+            noise2inverse=noise2inverse,
+            fixed_seed=fixed_seed,
+            datasets_dir=root,
+            dataset=dataset,
+            split=split,
+            download=download,
+            resize=resize,
+            device=device,
+            memoize_gt=memoize_gt,
+        )
 
     def __len__(self):
         return len(self.dataset)
