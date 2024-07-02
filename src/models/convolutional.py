@@ -164,9 +164,11 @@ class UNet(Module):
         scales=5,
         num_conv_blocks=5,
         rate=2,
+        residual=False,
     ):
         super().__init__()
         self.scales = scales
+        self.residual = residual
 
         self.conv_sequences = ModuleList()
         self.downsampling_layers = ModuleList()
@@ -206,6 +208,8 @@ class UNet(Module):
             self.conv_sequences.append(conv_sequence)
 
     def forward(self, x):
+        x0 = x
+
         conv_it = iter(self.conv_sequences)
         downsampling_it = iter(self.downsampling_layers)
         upsampling_it = iter(self.upsampling_layers)
@@ -226,11 +230,14 @@ class UNet(Module):
             x = x + x2
             x = next(conv_it)(x)
 
+        if self.residual:
+            x = x + x0
+
         return x
 
 
 class ConvNeuralNetwork(Module):
-    def __init__(self, in_channels, upsampling_rate, num_conv_blocks=5, scales=5):
+    def __init__(self, in_channels, upsampling_rate, unet_residual, num_conv_blocks=5, scales=5):
         super().__init__()
         self.seq = Sequential()
         self.scales = scales
@@ -243,6 +250,7 @@ class ConvNeuralNetwork(Module):
             in_channels=in_channels,
             scales=scales,
             num_conv_blocks=num_conv_blocks,
+            residual=unet_residual,
         )
         self.seq.append(module)
 

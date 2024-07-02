@@ -46,6 +46,7 @@ def get_model(
     task = args.task
     sr_factor = args.sr_factor
     noise_level = args.noise_level
+    unet_residual = args.unet_residual
 
     if kind == "swinir":
         upscale = sr_factor if task == "sr" else 1
@@ -77,7 +78,8 @@ def get_model(
     elif kind == "CNN":
         upsampling_rate = sr_factor if task == "sr" else 1
         model = ConvNeuralNetwork(in_channels=3,
-                                  upsampling_rate=upsampling_rate)
+                                  upsampling_rate=upsampling_rate,
+                                  unet_residual=unet_residual)
     elif kind == "dip":
         model = DeepImagePrior(
             physics=physics, sr_factor=sr_factor, iterations=dip_iterations
