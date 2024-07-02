@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from datetime import datetime
 from torchmetrics import MeanMetric
 
-from datasets import TrainingDataset
+from datasets import Dataset
 from losses import get_loss
 from metrics import psnr_fn
 from models import get_model
@@ -75,23 +75,22 @@ model = get_model(
 model.to(args.device)
 model.train()
 
-dataset_root = "./datasets"
 gt_size = args.gt_size if args.resize_gt else None
 noise2inverse = args.method == "noise2inverse"
 css = args.method == "css"
-training_dataset = TrainingDataset(
-    root=dataset_root,
-    physics=physics,
-    resize=gt_size,
-    download=args.download,
-    device=args.device,
-    dataset=args.dataset,
-    memoize_gt=args.memoize_gt,
-    split="train",
-    noise2inverse=noise2inverse,
-    css=css,
-    fixed_seed=False,
-    purpose="train",
+dataset = Dataset(
+        physics=physics,
+        purpose="train",
+        css=css,
+        noise2inverse=noise2inverse,
+        fixed_seed=False,
+        datasets_dir="./datasets",
+        split="train",
+        resize=gt_size,
+        dataset=args.dataset,
+        download=args.download,
+        device=args.device,
+        memoize_gt=args.memoize_gt,
 )
 
 if args.partial_sure:
@@ -119,7 +118,7 @@ else:
 loss = get_loss(args=args, sure_margin=sure_margin)
 
 batch_size = args.batch_size or 8
-training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
+training_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 lr = 2e-4 if args.task == "sr" else 5e-4
 optimizer = Adam(model.parameters(), lr=lr, betas=(0.9, 0.99))

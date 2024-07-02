@@ -9,7 +9,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 
-from datasets import TestDataset
+from datasets import Dataset
 from metrics import psnr_fn, ssim_fn
 from models import get_model
 from physics import get_physics
@@ -80,21 +80,21 @@ if args.weights is not None:
 
     model.load_state_dict(weights)
 
-gt_size = args.gt_size if args.resize_gt else None
-dataset = TestDataset(
-    root="./datasets",
-    split=args.split,
-    physics=physics,
-    resize=gt_size,
-    device=args.device,
-    download=args.download,
-    dataset=args.dataset,
-    memoize_gt=False,
-    noise2inverse=args.noise2inverse,
-    css=False,
-    fixed_seed=True,
-    purpose="test",
-)
+resize = args.gt_size if args.resize_gt else None
+dataset = Dataset(
+            physics=physics,
+            purpose="test",
+            css=False,
+            fixed_seed=True,
+            memoize_gt=False,
+            datasets_dir="./datasets",
+            resize=resize,
+            dataset=args.dataset,
+            split=args.split,
+            download=args.download,
+            noise2inverse=args.noise2inverse,
+            device=args.device,
+        )
 
 psnr_list = []
 ssim_list = []
