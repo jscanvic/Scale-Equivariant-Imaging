@@ -35,6 +35,8 @@ parser.add_argument("--ProposedLoss__alpha_tradeoff", type=float, default=1.0)
 parser.add_argument(
     "--ProposedLoss__scale_antialias", action=BooleanOptionalAction, default=False
 )
+parser.add_argument("--PrepareTrainingPairs__crop_size", type=int, default=48)
+parser.add_argument("--PrepareTrainingPairs__crop_location", type=str, default="random")
 parser.add_argument("--out_dir", type=str)
 parser.add_argument("--data_parallel_devices", type=str, default=None)
 parser.add_argument("--batch_size", type=int, default=8)

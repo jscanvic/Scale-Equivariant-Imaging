@@ -1,4 +1,5 @@
 import torch
+from torch.nn import Module
 from torch.utils.data import Dataset as BaseDataset
 from torchvision.transforms import InterpolationMode, functional as TF
 from functools import wraps
@@ -99,6 +100,30 @@ class GroundTruthDataset(BaseDataset):
         return size
 
 
+# NOTE: Getting small random crops should be optional and it should
+# be possible to use big crops instead, e.g. to make images
+# square-shaped which would enable stacking in the batch dimension.
+
+class PrepareTrainingPairs(Module):
+    def __init__(self, physics, crop_size=48, crop_location="random"):
+        super().__init__()
+        self.physics = physics
+        self.crop_size = crop_size
+        self.crop_location = crop_location
+
+    def forward(self, x, y):
+        # NOTE: It'd be great if physics contained its own downsampling ratio
+        # even for a blur operator.
+
+        if isinstance(self.physics, Downsampling):
+            xy_size_ratio = self.physics.factor
+        else:
+            xy_size_ratio = 1
+
+        T_crop = CropPair(self.crop_size, self.crop_size)
+        return T_crop(x, y, xy_size_ratio=xy_size_ratio)
+
+
 class Dataset(BaseDataset):
     def __init__(
         self,
@@ -129,6 +154,11 @@ class Dataset(BaseDataset):
             **blueprint[GroundTruthDataset.__name__],
         )
 
+        self.prepare_training_pairs = PrepareTrainingPairs(
+                physics=self.physics,
+                **blueprint[PrepareTrainingPairs.__name__],
+            )
+
     def __len__(self):
         return len(self.ground_truth_dataset)
 
@@ -154,21 +184,10 @@ class Dataset(BaseDataset):
                 x = x.squeeze(0)
                 y = y.squeeze(0)
 
+
             # NOTE: This should ideally either be done in the model, or not at
             # all.
-
-            # NOTE: Getting small random crops should be optional and it should
-            # be possible to use big crops instead, e.g. to make images
-            # square-shaped which would enable stacking in the batch dimension.
-
-            # Prepare a pair of crops for training.
-            if isinstance(self.physics, Downsampling):
-                xy_size_ratio = self.physics.factor
-            else:
-                xy_size_ratio = 1
-
-            T_crop = CropPair("random", 48)
-            x, y = T_crop(x, y, xy_size_ratio=xy_size_ratio)
+            x, y = self.prepare_training_pairs(x, y)
         elif self.purpose == "test":
             # NOTE: This should ideally be removed.
             if self.noise2inverse:
@@ -214,6 +233,11 @@ def get_dataset(args, purpose, physics, device):
             "datasets_dir": args.datasets_dir,
             "dataset": args.dataset,
             "download": args.download,
+        }
+
+    blueprint[PrepareTrainingPairs.__name__] = {
+            "crop_size": args.PrepareTrainingPairs__crop_size,
+            "crop_location": args.PrepareTrainingPairs__crop_location,
         }
 
     return Dataset(

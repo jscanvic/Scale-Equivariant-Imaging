@@ -7,6 +7,9 @@ from .downsampling import Downsampling
 from .kernels import get_kernel
 from .blur import Blur
 
+# NOTE: There should ideally be a class combining the blur and downsampling operators.
+
+# NOTE: The borders of blurred out images should be cropped out in order to avoid boundary effects.
 
 def get_physics(
     task,
