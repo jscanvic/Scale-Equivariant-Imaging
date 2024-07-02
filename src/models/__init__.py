@@ -17,6 +17,14 @@ class Identity(Module):
         return y
 
 
+def get_model_state_dict(model):
+    if not isinstance(model, DataParallel):
+        model_state_dict = model.state_dict()
+    else:
+        model_state_dict = model.module.state_dict()
+    return model_state_dict
+
+
 def get_model(
     args,
     physics=None,

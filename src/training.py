@@ -2,14 +2,11 @@ import os
 
 import torch
 
+from models import get_model_state_dict
+
 
 def get_model_state_dict(model):
-    if not isinstance(model, torch.nn.DataParallel):
-        model_state_dict = model.state_dict()
-    else:
-        model_state_dict = model.module.state_dict()
-    return model_state_dict
-
+    return get_model_state_dict(model)
 
 def save_training_state(epoch, model, optimizer, scheduler, state_path):
     """

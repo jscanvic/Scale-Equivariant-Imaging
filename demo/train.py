@@ -18,7 +18,6 @@ from metrics import psnr_fn
 from models import get_model
 from training import save_training_state, get_model_state_dict
 from physics import get_physics
-from torch.nn.parallel import DataParallel
 from noise2inverse import Noise2InverseModel
 from settings import DefaultArgParser
 
