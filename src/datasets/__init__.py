@@ -102,15 +102,13 @@ class GroundTruthDataset(BaseDataset):
 class Dataset(BaseDataset):
     def __init__(
         self,
+        blueprint,
         purpose,
         physics,
         css,
         noise2inverse,
         fixed_seed,
-        datasets_dir,
-        dataset,
         split,
-        download,
         resize,
         device,
         memoize_gt,
@@ -123,13 +121,11 @@ class Dataset(BaseDataset):
         self.fixed_seed = fixed_seed
 
         self.ground_truth_dataset = GroundTruthDataset(
-            datasets_dir=datasets_dir,
-            dataset=dataset,
-            split=split,
-            download=download,
-            resize=resize,
             device=device,
+            split=split,
+            resize=resize,
             memoize_gt=memoize_gt,
+            **blueprint[GroundTruthDataset.__name__],
         )
 
     def __len__(self):
@@ -198,13 +194,15 @@ def get_dataset(args, purpose, physics, device):
         memoize_gt = args.memoize_gt
 
     blueprint = {}
-    blueprint[Dataset.__name__] = {
+
+    blueprint[GroundTruthDataset.__name__] = {
             "datasets_dir": args.datasets_dir,
             "dataset": args.dataset,
             "download": args.download,
         }
 
     return Dataset(
+            blueprint=blueprint,
             device=device,
             physics=physics,
             purpose=purpose,
@@ -214,5 +212,4 @@ def get_dataset(args, purpose, physics, device):
             resize=resize,
             split=split,
             memoize_gt=memoize_gt,
-            **blueprint[Dataset.__name__],
     )
