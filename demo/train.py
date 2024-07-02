@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from datetime import datetime
 from torchmetrics import MeanMetric
 
-from datasets import Dataset
+from datasets import get_dataset
 from losses import get_loss
 from metrics import psnr_fn
 from models import get_model
@@ -75,23 +75,10 @@ model = get_model(
 model.to(args.device)
 model.train()
 
-gt_size = args.gt_size if args.resize_gt else None
-noise2inverse = args.method == "noise2inverse"
-css = args.method == "css"
-dataset = Dataset(
-        physics=physics,
-        purpose="train",
-        css=css,
-        noise2inverse=noise2inverse,
-        fixed_seed=False,
-        datasets_dir=args.datasets_dir,
-        split="train",
-        resize=gt_size,
-        dataset=args.dataset,
-        download=args.download,
-        device=args.device,
-        memoize_gt=args.memoize_gt,
-)
+dataset = get_dataset(args=args,
+                      purpose="train",
+                      physics=physics,
+                      device=args.device)
 
 if args.partial_sure:
     if args.sure_margin is not None:

@@ -180,3 +180,39 @@ class Dataset(BaseDataset):
             raise ValueError(f"Unknown purpose: {self.purpose}")
 
         return x, y
+
+
+def get_dataset(args, purpose, physics, device):
+    resize = args.gt_size if args.resize_gt else None
+    if purpose == "test":
+        noise2inverse = args.noise2inverse
+        css = False
+        fixed_seed = True
+        split = args.split
+        memoize_gt = False
+    elif purpose == "train":
+        noise2inverse = args.method == "noise2inverse"
+        css = args.method == "css"
+        fixed_seed = False
+        split = "train"
+        memoize_gt = args.memoize_gt
+
+    blueprint = {}
+    blueprint[Dataset.__name__] = {
+            "datasets_dir": args.datasets_dir,
+            "dataset": args.dataset,
+            "download": args.download,
+        }
+
+    return Dataset(
+            device=device,
+            physics=physics,
+            purpose=purpose,
+            css=css,
+            noise2inverse=noise2inverse,
+            fixed_seed=fixed_seed,
+            resize=resize,
+            split=split,
+            memoize_gt=memoize_gt,
+            **blueprint[Dataset.__name__],
+    )
