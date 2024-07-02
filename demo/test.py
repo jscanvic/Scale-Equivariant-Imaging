@@ -22,7 +22,6 @@ parser = DefaultArgParser()
 parser.add_argument("--weights", type=str)
 parser.add_argument("--split", type=str, default="val")
 parser.add_argument("--save_images", action="store_true")
-parser.add_argument("--dataset_offset", type=int, default=None)
 parser.add_argument("--indices", type=str, default=None)
 parser.add_argument("--out_dir", type=str, default=None)
 parser.add_argument("--save_psf", action="store_true")
@@ -91,7 +90,6 @@ dataset = TestDataset(
     device=args.device,
     download=args.download,
     dataset=args.dataset,
-    offset=args.dataset_offset,
     method=method,
 )
 

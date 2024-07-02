@@ -161,12 +161,10 @@ class TestDataset(BaseDataset):
         device="cpu",
         download=False,
         dataset="div2k",
-        offset=None,
         method=None,
         memoize_gt=False,
     ):
         self.physics = physics
-        self.offset = offset
         self.method = method
 
         self.ground_truth_dataset = GroundTruthDataset(
@@ -180,8 +178,6 @@ class TestDataset(BaseDataset):
         )
 
     def __getitem__(self, index):
-        if self.offset is not None:
-            index += self.offset
         x = self.ground_truth_dataset[index]
 
         torch.manual_seed(0)
