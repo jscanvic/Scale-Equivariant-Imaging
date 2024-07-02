@@ -227,9 +227,9 @@ def get_dataset(args, purpose, physics, device):
     blueprint = {}
 
     blueprint[GroundTruthDataset.__name__] = {
-            "datasets_dir": args.datasets_dir,
-            "dataset": args.dataset,
-            "download": args.download,
+            "datasets_dir": args.GroundTruthDataset__datasets_dir,
+            "dataset": args.GroundTruthDataset__dataset,
+            "download": args.GroundTruthDataset__download,
             "size": args.GroundTruthDataset__size,
         }
 
