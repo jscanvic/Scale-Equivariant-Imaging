@@ -26,3 +26,4 @@ class DefaultArgParser(ArgumentParser):
         self.add_argument("--PrepareTrainingPairs__crop_location", type=str, default="random")
         self.add_argument("--model_kind", type=str, default="swinir")
         self.add_argument("--unet_residual", action=BooleanOptionalAction, default=True)
+        self.add_argument("--unet_num_conv_blocks", type=int, default=5)
