@@ -17,6 +17,7 @@ def get_physics(
     kernel_path=None,
     sr_factor=None,
     device="cpu",
+    true_adjoint=False,
 ):
     assert task in ["deblurring", "sr"]
 
@@ -31,7 +32,7 @@ def get_physics(
         else:
             physics = CTLikeFilter()
     else:
-        physics = Downsampling(ratio=sr_factor, antialias=True)
+        physics = Downsampling(ratio=sr_factor, antialias=True, true_adjoint=true_adjoint)
 
     physics.noise_model = GaussianNoise(sigma=noise_level / 255)
 
