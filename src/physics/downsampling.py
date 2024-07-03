@@ -2,7 +2,6 @@ import torch
 from deepinv.physics import LinearPhysics
 from torch.nn import Module
 from torch.nn.functional import interpolate
-from torch.signal.windows import kaiser
 
 
 class Downsampling(LinearPhysics):

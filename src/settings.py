@@ -1,5 +1,3 @@
-import argparse
-
 from argparse import ArgumentParser, BooleanOptionalAction
 
 

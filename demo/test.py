@@ -2,7 +2,6 @@
 # noinspection PyUnresolvedReferences
 import bm3d
 
-import argparse
 import os
 
 import torch
