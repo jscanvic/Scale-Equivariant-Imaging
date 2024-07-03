@@ -33,6 +33,9 @@ class Div2K(Dataset):
     def __len__(self):
         return self.split_size
 
+    def get_unique_id(self, index):
+        return self.split_offset + index - 1
+
     @staticmethod
     def download(datasets_dir):
         archives = [

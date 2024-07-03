@@ -33,6 +33,13 @@ class GroundTruthDataset(BaseDataset):
         else:
             raise ValueError(f"Unknown dataset: {dataset_name}")
 
+    def get_unique_id(self, index):
+        if hasattr(self.dataset, "get_unique_id"):
+            id = self.dataset.get_unique_id(index)
+        else:
+            id = index
+        return id
+
     @staticmethod
     def memoize_load_image(f):
         cache = {}
@@ -108,6 +115,7 @@ class Dataset(BaseDataset):
         split,
         device,
         memoize_gt,
+        unique_seeds,
     ):
         super().__init__()
         self.purpose = purpose
@@ -115,8 +123,9 @@ class Dataset(BaseDataset):
         self.css = css
         self.noise2inverse = noise2inverse
         # NOTE: the measurements should always be deterministic except for
-        # supervised training
+        # supervised training. Although it can be dealt with in the loss as well.
         self.deterministic_measurements = purpose == "test"
+        self.unique_seeds = unique_seeds
 
         self.ground_truth_dataset = GroundTruthDataset(
             blueprint=blueprint,
@@ -143,8 +152,11 @@ class Dataset(BaseDataset):
             x = self.physics(x.unsqueeze(0)).squeeze(0)
 
         if self.deterministic_measurements:
-            # NOTE: the seed should be different for every entry
-            torch.manual_seed(0)
+            seed = self.ground_truth_dataset.get_unique_id(index)
+            if self.unique_seeds:
+                torch.manual_seed(seed)
+            else:
+                torch.manual_seed(0)
 
         y = self.physics(x.unsqueeze(0)).squeeze(0)
 
@@ -230,4 +242,6 @@ def get_dataset(args, purpose, physics, device):
             noise2inverse=noise2inverse,
             split=split,
             memoize_gt=memoize_gt,
+            # NOTE: This should be set to true.
+            unique_seeds=False,
     )

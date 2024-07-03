@@ -33,6 +33,13 @@ class TomographyDataset(Dataset):
             assert size == 100
         return size
 
+    def get_unique_id(self, index):
+        if self.split == "train":
+            id = index
+        elif self.split == "val":
+            id = index + 4992
+        return id
+
     @staticmethod
     def download(datasets_dir):
         download_and_extract_archive(
