@@ -96,7 +96,7 @@ class PrepareTrainingPairs(Module):
         # even for a blur operator.
 
         if isinstance(self.physics, Downsampling):
-            xy_size_ratio = self.physics.factor
+            xy_size_ratio = self.physics.ratio
         else:
             xy_size_ratio = 1
 
@@ -186,7 +186,7 @@ class Dataset(BaseDataset):
             if x.shape != y.shape:
                 h, w = y.shape[1], y.shape[2]
                 if isinstance(self.physics, Downsampling):
-                    f = self.physics.factor
+                    f = self.physics.ratio
                 else:
                     f = 1
                 x = TF.crop(x, top=0, left=0, height=h * f, width=w * f)

@@ -40,7 +40,6 @@ physics = get_physics(
     kernel_path=args.kernel,
     sr_factor=args.sr_factor,
     device=args.device,
-    sr_filter=args.sr_filter,
 )
 
 if args.dip_iterations is not None:

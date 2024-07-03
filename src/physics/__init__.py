@@ -17,17 +17,7 @@ def get_physics(
     kernel_path=None,
     sr_factor=None,
     device="cpu",
-    sr_filter="bicubic",
 ):
-    """
-    Get the forward model for the given task
-
-    :param task: task to perform (i.e. sr or denoising)
-    :param noise_level: noise level (e.g. 5)
-    :param kernel_path: path to the blur kernel (optional)
-    :param sr_factor: super-resolution factor (optional)
-    :param device: device to use
-    """
     assert task in ["deblurring", "sr"]
 
     if task == "deblurring":
@@ -41,7 +31,7 @@ def get_physics(
         else:
             physics = CTLikeFilter()
     else:
-        physics = Downsampling(sr_factor, antialias=True, filter=sr_filter)
+        physics = Downsampling(ratio=sr_factor, antialias=True)
 
     physics.noise_model = GaussianNoise(sigma=noise_level / 255)
 

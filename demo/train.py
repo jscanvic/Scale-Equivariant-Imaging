@@ -63,7 +63,6 @@ physics = get_physics(
     kernel_path=args.kernel,
     sr_factor=args.sr_factor,
     device=args.device,
-    sr_filter=args.sr_filter,
 )
 
 # NOTE: This should ideally take less arguments.
