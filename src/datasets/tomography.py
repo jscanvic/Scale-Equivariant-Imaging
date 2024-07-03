@@ -26,7 +26,12 @@ class TomographyDataset(Dataset):
         return x
 
     def __len__(self):
-        return len(self._dataset)
+        size = len(self._dataset)
+        if self.split == "train":
+            assert size == 4992
+        elif self.split == "val":
+            assert size == 100
+        return size
 
     @staticmethod
     def download(datasets_dir):

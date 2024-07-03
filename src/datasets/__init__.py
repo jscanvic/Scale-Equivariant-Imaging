@@ -15,32 +15,23 @@ from .single_image import SingleImageDataset
 
 class GroundTruthDataset(BaseDataset):
     def __init__(
-        self, blueprint, datasets_dir, dataset, split, download, size, device, memoize_gt
+        self, blueprint, datasets_dir, dataset_name, split, download, size, device, memoize_gt
     ):
         super().__init__()
-        self.blueprint = blueprint
-        self.datasets_dir = datasets_dir
-        self.dataset = dataset
-        self.split = split
         self.size = size
         self.device = device
         self.memoize_gt = memoize_gt
 
-        if download:
-            self.download(datasets_dir=self.datasets_dir, dataset=self.dataset)
-
-    @staticmethod
-    def download(datasets_dir, dataset):
-        if dataset == "div2k":
-            Div2K.download(datasets_dir)
-        elif dataset == "urban100":
-            Urban100.download(datasets_dir)
-        elif dataset == "ct":
-            TomographyDataset.download(datasets_dir)
-        elif dataset == "single_image":
-            SingleImageDataset.download(datasets_dir)
+        if dataset_name == "div2k":
+            self.dataset = Div2K(split, datasets_dir, download=download)
+        elif dataset_name == "urban100":
+            self.dataset = Urban100(split, datasets_dir, download=download)
+        elif dataset_name == "ct":
+            self.dataset = TomographyDataset(split, datasets_dir, download=download)
+        elif dataset_name == "single_image":
+            self.dataset = SingleImageDataset(**blueprint[SingleImageDataset.__name__])
         else:
-            raise ValueError(f"Unknown dataset: {dataset}")
+            raise ValueError(f"Unknown dataset: {dataset_name}")
 
     @staticmethod
     def memoize_load_image(f):
@@ -66,18 +57,7 @@ class GroundTruthDataset(BaseDataset):
 
     @memoize_load_image
     def __getitem__(self, index):
-        if self.dataset == "div2k":
-            xs = Div2K(self.split, self.datasets_dir)
-        elif self.dataset == "urban100":
-            xs = Urban100(self.split, self.datasets_dir)
-        elif self.dataset == "ct":
-            xs = TomographyDataset(self.split, self.datasets_dir)
-        elif self.dataset == "single_image":
-            xs = SingleImageDataset(**self.blueprint[SingleImageDataset.__name__])
-        else:
-            raise ValueError(f"Unknown dataset: {self.dataset}")
-
-        x = xs[index]
+        x = self.dataset[index]
         x = x.to(self.device)
         if self.size is not None:
             x = TF.resize(
@@ -90,23 +70,7 @@ class GroundTruthDataset(BaseDataset):
         return x
 
     def __len__(self):
-        if self.dataset == "div2k":
-            xs = Div2K(split=self.split, datasets_dir=None, download=False)
-            size = len(xs)
-        elif self.dataset == "urban100":
-            xs = Urban100(split=self.split, datasets_dir=None, download=False)
-            size = len(xs)
-        elif self.dataset == "ct":
-            if self.split == "train":
-                size = 4992
-            elif self.split == "val":
-                size = 100
-        elif self.dataset == "single_image":
-            xs = SingleImageDataset(**self.blueprint[SingleImageDataset.__name__])
-            size = len(xs)
-        else:
-            raise ValueError(f"Unknown dataset: {self.dataset}")
-        return size
+        return len(self.dataset)
 
 
 # NOTE: Getting small random crops should be optional and it should
@@ -240,7 +204,7 @@ def get_dataset(args, purpose, physics, device):
             # NOTE: This argument should be named according to the class
             # GroundTruthDataset but happens to be used (wrongly) elsewhere and
             # this must be dealt with first
-            "dataset": args.dataset,
+            "dataset_name": args.dataset,
             "datasets_dir": args.GroundTruthDataset__datasets_dir,
             "download": args.GroundTruthDataset__download,
             "size": args.GroundTruthDataset__size,
