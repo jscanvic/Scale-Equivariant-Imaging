@@ -65,7 +65,7 @@ class ProposedLoss(Module):
     ):
         super().__init__()
 
-        assert args.sure_alternative in [None, "r2r"]
+        assert sure_alternative in [None, "r2r"]
         if sure_alternative == "r2r" and method == "proposed":
             ei_transform = Scale(antialias=scale_antialias)
             loss_fns = [
@@ -87,14 +87,14 @@ class ProposedLoss(Module):
 
             if transforms == "Scaling_Transforms":
                 ei_transform = Scale(antialias=scale_antialias)
-            if transforms == "Rotations":
+            elif transforms == "Rotations":
                 ei_transform = Rotate()
-            if transforms == "Shifts":
+            elif transforms == "Shifts":
                 ei_transform = Shift()
             else:
                 raise ValueError(f"Unknown transforms: {transforms}")
 
-            equivariant_loss = EIloss(
+            equivariant_loss = EILoss(
                 metric=mse(),
                 transform=ei_transform,
                 no_grad=stop_gradient,

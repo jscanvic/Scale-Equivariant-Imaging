@@ -146,7 +146,7 @@ for epoch in range(epochs):
         optimizer.zero_grad()
 
         # NOTE: This should ideally be in the model or in the loss.
-        if args.method == "proposed" and args.sure_alternative == "r2r":
+        if args.method == "proposed" and args.ProposedLoss__sure_alternative == "r2r":
             x_hat = None
         else:
             x_hat = model(y)

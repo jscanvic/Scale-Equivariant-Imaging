@@ -10,13 +10,15 @@ from .crop import CropPair
 from .div2k import Div2K
 from .tomography import TomographyDataset
 from .urban100 import Urban100
+from .single_image import SingleImageDataset
 
 
 class GroundTruthDataset(BaseDataset):
     def __init__(
-        self, datasets_dir, dataset, split, download, size, device, memoize_gt
+        self, blueprint, datasets_dir, dataset, split, download, size, device, memoize_gt
     ):
         super().__init__()
+        self.blueprint = blueprint
         self.datasets_dir = datasets_dir
         self.dataset = dataset
         self.split = split
@@ -35,6 +37,8 @@ class GroundTruthDataset(BaseDataset):
             Urban100.download(datasets_dir)
         elif dataset == "ct":
             TomographyDataset.download(datasets_dir)
+        elif dataset == "single_image":
+            SingleImageDataset.download(datasets_dir)
         else:
             raise ValueError(f"Unknown dataset: {dataset}")
 
@@ -68,6 +72,8 @@ class GroundTruthDataset(BaseDataset):
             xs = Urban100(self.split, self.datasets_dir)
         elif self.dataset == "ct":
             xs = TomographyDataset(self.split, self.datasets_dir)
+        elif self.dataset == "single_image":
+            xs = SingleImageDataset(**self.blueprint[SingleImageDataset.__name__])
         else:
             raise ValueError(f"Unknown dataset: {self.dataset}")
 
@@ -95,6 +101,9 @@ class GroundTruthDataset(BaseDataset):
                 size = 4992
             elif self.split == "val":
                 size = 100
+        elif self.dataset == "single_image":
+            xs = SingleImageDataset(**self.blueprint[SingleImageDataset.__name__])
+            size = len(xs)
         else:
             raise ValueError(f"Unknown dataset: {self.dataset}")
         return size
@@ -146,6 +155,7 @@ class Dataset(BaseDataset):
         self.deterministic_measurements = purpose == "test"
 
         self.ground_truth_dataset = GroundTruthDataset(
+            blueprint=blueprint,
             device=device,
             split=split,
             memoize_gt=memoize_gt,
@@ -239,6 +249,12 @@ def get_dataset(args, purpose, physics, device):
     blueprint[PrepareTrainingPairs.__name__] = {
             "crop_size": args.PrepareTrainingPairs__crop_size,
             "crop_location": args.PrepareTrainingPairs__crop_location,
+        }
+
+
+    blueprint[SingleImageDataset.__name__] = {
+            "image_path": args.SingleImageDataset__image_path,
+            "duplicates_count": args.SingleImageDataset__duplicates_count,
         }
 
     return Dataset(
