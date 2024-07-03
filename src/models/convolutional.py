@@ -17,7 +17,6 @@ import torch.nn.functional as F
 from math import ceil
 
 
-# NOTE: This is probably actually an InstanceNorm.
 # a layer norm averaging over the channels
 class LayerNorm(Module):
     def __init__(self, *args, **kwargs):
