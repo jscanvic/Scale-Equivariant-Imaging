@@ -34,18 +34,31 @@ def get_model_state_dict(model):
 # an instance of it.
 def get_model(
     args,
-    physics=None,
-    channels=3,
-    device="cpu",
-    kind="swinir",
-    data_parallel_devices=None,
-    dip_iterations=4000,
-    tv_lambd=None,
-    tv_max_iter=None,
+    physics,
+    device,
 ):
     task = args.task
     sr_factor = args.sr_factor
     noise_level = args.noise_level
+    tv_lambd = getattr(args, "tv_lambd", None)
+    tv_max_iter = getattr(args, "tv_max_iter", None)
+    kind = args.model_kind
+
+    if args.dip_iterations is not None:
+        dip_iterations = args.dip_iterations
+    else:
+        if args.task == "deblurring" and "Gaussian" in args.kernel:
+            dip_iterations = 4000
+        elif args.task == "deblurring":
+            dip_iterations = 1000
+        elif args.task == "sr":
+            dip_iterations = 1000
+
+    data_parallel_devices = (
+        args.data_parallel_devices.split(",")
+        if args.data_parallel_devices is not None
+        else None
+    )
 
     if kind == "swinir":
         upscale = sr_factor if task == "sr" else 1
@@ -97,7 +110,7 @@ def get_model(
             noise_level_img,
             early_stop=early_stop,
             device=device,
-            channels=channels,
+            channels=3,
         )
     elif kind == "bm3d":
         model = BM3D(physics=physics, sigma_psd=noise_level / 255)

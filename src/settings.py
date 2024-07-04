@@ -44,3 +44,4 @@ class DefaultArgParser(ArgumentParser):
         self.add_argument(
             "--SingleImageDataset__duplicates_count", type=int, default=800
         )
+        self.add_argument("--data_parallel_devices", type=str, default=None)

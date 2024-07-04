@@ -62,12 +62,12 @@ class PhysicsManager:
 def get_physics(args, device):
     blueprint = {}
     blueprint[PhysicsManager.__name__] = {
-            "task": args.task,
-            "noise_level": args.noise_level,
-            "kernel_path": args.kernel_path,
-            "sr_factor": args.sr_factor,
-            "true_adjoint": args.true_adjoint,
-        }
+        "task": args.task,
+        "noise_level": args.noise_level,
+        "kernel_path": args.kernel_path,
+        "sr_factor": args.sr_factor,
+        "true_adjoint": args.true_adjoint,
+    }
 
     physics_manager = PhysicsManager(
         device=device,

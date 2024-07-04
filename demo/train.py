@@ -34,7 +34,6 @@ parser.add_argument(
     "--ProposedLoss__scale_antialias", action=BooleanOptionalAction, default=False
 )
 parser.add_argument("--out_dir", type=str)
-parser.add_argument("--data_parallel_devices", type=str, default=None)
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--epochs", type=int, default=None)
 parser.add_argument("--checkpoint_interval", type=int, default=None)
@@ -46,27 +45,15 @@ parser.add_argument("--partial_sure_sr", action=BooleanOptionalAction, default=F
 parser.add_argument("--sure_margin", type=int, default=None)
 args = parser.parse_args()
 
-# NOTE: This should ideally be dealt with in some get_sth function.
-data_parallel_devices = (
-    args.data_parallel_devices.split(",")
-    if args.data_parallel_devices is not None
-    else None
-)
-
 # NOTE: This should ideally take less arguments and let the function extract
 # what it needs from the args directly.
 physics = get_physics(args, device=args.device)
 
-# NOTE: This should ideally take less arguments.
+
 model = get_model(
     args=args,
     physics=physics,
     device=args.device,
-    kind=args.model_kind,
-    data_parallel_devices=data_parallel_devices,
-    dip_iterations=None,
-    tv_lambd=None,
-    tv_max_iter=None,
 )
 model.to(args.device)
 model.train()

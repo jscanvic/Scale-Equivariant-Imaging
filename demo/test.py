@@ -36,25 +36,10 @@ args = parser.parse_args()
 
 physics = get_physics(args, device=args.device)
 
-if args.dip_iterations is not None:
-    dip_iterations = args.dip_iterations
-else:
-    if args.task == "deblurring" and "Gaussian" in args.kernel:
-        dip_iterations = 4000
-    elif args.task == "deblurring":
-        dip_iterations = 1000
-    elif args.task == "sr":
-        dip_iterations = 1000
-
 model = get_model(
     args=args,
     physics=physics,
     device=args.device,
-    kind=args.model_kind,
-    data_parallel_devices=None,
-    dip_iterations=dip_iterations,
-    tv_lambd=args.tv_lambd,
-    tv_max_iter=args.tv_max_iter,
 )
 model.to(args.device)
 model.eval()
