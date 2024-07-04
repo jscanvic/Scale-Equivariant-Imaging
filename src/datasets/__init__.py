@@ -155,6 +155,7 @@ class Dataset(BaseDataset):
         x = self.ground_truth_dataset[index]
 
         degradation_fn = self.physics.A
+        degradation_inverse_fn = self.physics.A_dagger
         add_random_noise = self.physics.noise_model
 
         # NOTE: This should ideally be done in the class CSSLoss instead but
@@ -184,7 +185,7 @@ class Dataset(BaseDataset):
                 T_n2i = Noise2InverseTransform(
                     task=self.physics.task,
                     physics_filter=physics_filter,
-                    degradation_inverse_fn=self.physics.A_dagger,
+                    degradation_inverse_fn=degradation_inverse_fn,
                 )
                 x, y = T_n2i(x.unsqueeze(0), y.unsqueeze(0))
                 x = x.squeeze(0)
