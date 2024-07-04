@@ -88,9 +88,7 @@ if args.partial_sure:
     if args.sure_margin is not None:
         sure_margin = args.sure_margin
     elif args.task == "deblurring":
-        from physics import Blur
-
-        assert isinstance(physics, Blur)
+        assert physics.task == "deblurring"
 
         kernel = physics.filter
         kernel_size = max(kernel.shape[-2], kernel.shape[-1])

@@ -13,7 +13,7 @@ class ImageSlices(Module):
     def __init__(self, physics, num_splits=4):
         super().__init__()
         self.num_splits = num_splits
-        if isinstance(physics, Blur):
+        if physics.task == "deblurring":
             # we use a faster implementation than the default one
             self.backproject = InverseFilter(physics)
         else:
@@ -44,7 +44,7 @@ class ImageSlices(Module):
 class InverseFilter(Module):
     def __init__(self, physics):
         super().__init__()
-        assert isinstance(physics, Blur)
+        assert physics.task == "deblurring"
         assert physics.filter.dim() == 4
         self.kernel = physics.filter.squeeze(0).squeeze(0)
 

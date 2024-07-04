@@ -5,7 +5,6 @@ from torchvision.transforms import InterpolationMode, functional as TF
 from functools import wraps
 
 from noise2inverse import Noise2InverseTransform
-from physics import Blur, Downsampling
 from .crop import CropPair
 from .div2k import Div2K
 from .tomography import TomographyDataset
@@ -95,7 +94,7 @@ class PrepareTrainingPairs(Module):
         # NOTE: It'd be great if physics contained its own downsampling ratio
         # even for a blur operator.
 
-        if isinstance(self.physics, Downsampling):
+        if self.physics.task == "sr":
             xy_size_ratio = self.physics.ratio
         else:
             xy_size_ratio = 1
@@ -146,10 +145,18 @@ class Dataset(BaseDataset):
     def __getitem__(self, index):
         x = self.ground_truth_dataset[index]
 
+        degradation_fn = self.physics.A
+        add_random_noise = self.physics.noise_model
+
         # NOTE: This should ideally be done in the class CSSLoss instead but
         # the border effects in the current implementation make it challenging.
         if self.css:
-            x = self.physics(x.unsqueeze(0)).squeeze(0)
+            x = x.unsqueeze(0)
+            x = degradation_fn(x)
+            x = add_random_noise(x)
+            x = x.squeeze(0)
+
+        y = degradation_fn(x.unsqueeze(0))
 
         if self.deterministic_measurements:
             seed = self.ground_truth_dataset.get_unique_id(index)
@@ -158,7 +165,8 @@ class Dataset(BaseDataset):
             else:
                 torch.manual_seed(0)
 
-        y = self.physics(x.unsqueeze(0)).squeeze(0)
+        y = add_random_noise(y)
+        y = y.squeeze(0)
 
         if self.purpose == "train":
             # NOTE: This should ideally be done in the model.
@@ -176,7 +184,7 @@ class Dataset(BaseDataset):
             # NOTE: This should ideally be removed.
             if self.noise2inverse:
                 # bug fix: make y have even height and width
-                if isinstance(self.physics, Blur):
+                if self.physics.task == "deblurring":
                     w = 2 * (y.shape[1] // 2)
                     h = 2 * (y.shape[2] // 2)
                     y = y[:, :w, :h]
@@ -185,7 +193,7 @@ class Dataset(BaseDataset):
             # crop x to make its dimensions be a multiple of u's dimensions
             if x.shape != y.shape:
                 h, w = y.shape[1], y.shape[2]
-                if isinstance(self.physics, Downsampling):
+                if self.physics.task == "sr":
                     f = self.physics.ratio
                 else:
                     f = 1

@@ -45,6 +45,9 @@ class PhysicsManager:
         else:
             raise ValueError(f"Unknown task: {self.task}")
 
+        # NOTE: This is meant to go.
+        setattr(self.physics, "task", self.task)
+
         self.physics.noise_model = GaussianNoise(sigma=self.noise_level / 255)
 
     def get_physics(self):

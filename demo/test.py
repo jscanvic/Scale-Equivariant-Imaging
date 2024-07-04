@@ -88,11 +88,10 @@ psnr_list = []
 ssim_list = []
 
 if args.save_psf:
-    from deepinv.physics import Blur
     from torchvision.utils import save_image
 
     assert args.out_dir is not None
-    assert isinstance(physics, Blur)
+    assert physics.task == "deblurring"
 
     kernel = physics.filter
     assert kernel.dim() == 4
