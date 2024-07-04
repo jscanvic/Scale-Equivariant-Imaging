@@ -100,19 +100,14 @@ class Upsample(Module):
         self.rate = rate
 
         self.seq = Sequential()
+        self.seq.append(IdealUpsample(rate=self.rate))
+        self.seq.append(LayerNorm(self.in_channels, eps=1e-6))
         self.seq.append(
-                IdealUpsample(rate=self.rate)
-            )
-        self.seq.append(
-                LayerNorm(self.in_channels, eps=1e-6)
-            )
-        self.seq.append(
-                Conv2d(self.in_channels, self.out_channels, kernel_size=1, stride=1)
-            )
+            Conv2d(self.in_channels, self.out_channels, kernel_size=1, stride=1)
+        )
 
     def forward(self, x):
         return self.seq(x)
-
 
 
 class IdealDownsample(Module):
@@ -145,9 +140,7 @@ class Downsample(Module):
         self.out_channels = out_channels or in_channels * (rate**2)
         self.rate = rate
         self.ln = LayerNorm(self.in_channels, eps=1e-6)
-        self.conv = Conv2d(
-            self.in_channels, self.out_channels, kernel_size=1, stride=1
-        )
+        self.conv = Conv2d(self.in_channels, self.out_channels, kernel_size=1, stride=1)
         self.ideal_downsample = IdealDownsample(rate=self.rate)
 
     def forward(self, x):
@@ -155,6 +148,7 @@ class Downsample(Module):
         x = self.conv(x)
         x = self.ideal_downsample(x)
         return x
+
 
 class UNet(Module):
     def __init__(
@@ -236,13 +230,17 @@ class UNet(Module):
 
 
 class ConvNeuralNetwork(Module):
-    def __init__(self, in_channels, upsampling_rate, unet_residual, num_conv_blocks=5, scales=5):
+    def __init__(
+        self, in_channels, upsampling_rate, unet_residual, num_conv_blocks=5, scales=5
+    ):
         super().__init__()
         self.seq = Sequential()
         self.scales = scales
 
         if upsampling_rate != 1:
-            module = Upsample(in_channels=in_channels, out_channels=in_channels, rate=upsampling_rate)
+            module = Upsample(
+                in_channels=in_channels, out_channels=in_channels, rate=upsampling_rate
+            )
             self.seq.append(module)
 
         module = UNet(

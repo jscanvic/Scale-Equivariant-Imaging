@@ -3,21 +3,24 @@
 
 import numpy as np
 import torch
-from deepinv.physics import Blur
 from itertools import combinations
 
 from torch.nn import Module
 
 
 class ImageSlices(Module):
-    def __init__(self, physics, num_splits=4):
+    def __init__(self, num_splits, task, physics_filter, degradation_inverse_fn):
         super().__init__()
         self.num_splits = num_splits
-        if physics.task == "deblurring":
+        if task == "deblurring":
             # we use a faster implementation than the default one
-            self.backproject = InverseFilter(physics)
+            kernel = physics_filter
+            assert kernel is not None
+            assert kernel.dim() == 4
+            kernel = kernel.squeeze(0).squeeze(0)
+            self.backproject = InverseFilter(kernel=kernel)
         else:
-            self.backproject = physics.A_dagger
+            self.backproject = degradation_inverse_fn
 
     def forward(self, y):
         measurement_slices = self.measurement_slices(y)
@@ -42,11 +45,9 @@ class ImageSlices(Module):
 
 
 class InverseFilter(Module):
-    def __init__(self, physics):
+    def __init__(self, kernel):
         super().__init__()
-        assert physics.task == "deblurring"
-        assert physics.filter.dim() == 4
-        self.kernel = physics.filter.squeeze(0).squeeze(0)
+        self.kernel = kernel
 
     def forward(self, y):
         assert y.dim() == 4
@@ -69,12 +70,25 @@ class InverseFilter(Module):
 
 
 class Noise2InverseModel(Module):
-    def __init__(self, backbone, physics, num_splits=4, strategy="X:1"):
+    def __init__(
+        self,
+        backbone,
+        task,
+        physics_filter,
+        degradation_inverse_fn,
+        num_splits=4,
+        strategy="X:1",
+    ):
         super().__init__()
-        self.physics = physics
         self.backbone = backbone
         self.num_splits = num_splits
         self.stragegy = strategy
+        self.transform = ImageSlices(
+            num_splits=self.num_splits,
+            task=task,
+            physics_filter=physics_filter,
+            degradation_inverse_fn=degradation_inverse_fn,
+        )
 
     def forward(self, y):
         inputs = self.compute_inputs(y)
@@ -83,8 +97,7 @@ class Noise2InverseModel(Module):
         return x_hat
 
     def compute_inputs(self, y):
-        T = ImageSlices(self.physics, num_splits=self.num_splits)
-        image_slices = T(y)
+        image_slices = self.transform(y)
         if self.stragegy == "X:1":
             num_input = self.num_splits - 1
         else:
@@ -100,15 +113,26 @@ class Noise2InverseModel(Module):
 
 
 class Noise2InverseTransform(Module):
-    def __init__(self, physics, strategy="X:1", num_splits=4):
+    def __init__(
+        self,
+        task,
+        physics_filter,
+        degradation_inverse_fn,
+        strategy="X:1",
+        num_splits=4,
+    ):
         super().__init__()
-        self.physics = physics
         self.strategy = strategy
         self.num_splits = num_splits
+        self.transform = ImageSlices(
+            num_splits=self.num_splits,
+            task=task,
+            physics_filter=physics_filter,
+            degradation_inverse_fn=degradation_inverse_fn,
+        )
 
     def forward(self, x, y):
-        T = ImageSlices(self.physics, num_splits=self.num_splits)
-        image_slices = T(y)
+        image_slices = self.transform(y)
         if self.strategy == "X:1":
             num_input = self.num_splits - 1
         else:

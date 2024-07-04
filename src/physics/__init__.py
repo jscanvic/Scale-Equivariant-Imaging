@@ -35,7 +35,9 @@ class PhysicsManager:
                 else:
                     kernel = get_kernel(name=self.kernel_path)
                 kernel = kernel.unsqueeze(0).unsqueeze(0).to(self.device)
-                self.physics = Blur(filter=kernel, padding="circular", device=self.device)
+                self.physics = Blur(
+                    filter=kernel, padding="circular", device=self.device
+                )
             else:
                 self.physics = CTLikeFilter()
         elif self.task == "sr":
@@ -52,7 +54,6 @@ class PhysicsManager:
 
     def get_physics(self):
         return self.physics
-
 
 
 # NOTE: The borders of blurred out images should be cropped out in order to avoid boundary effects.

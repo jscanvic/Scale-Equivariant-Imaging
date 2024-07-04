@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset
 from torchvision.io import read_image
 
+
 class SingleImageDataset(Dataset):
     # NOTE: For the sake of simplicity, the dataset is made to contain many
     # duplicates of the same image, enabling to train for the same amount of
@@ -14,7 +15,6 @@ class SingleImageDataset(Dataset):
 
         if download:
             self.download(datasets_dir)
-
 
     def __len__(self):
         return self.duplicates_count

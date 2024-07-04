@@ -14,7 +14,15 @@ from .single_image import SingleImageDataset
 
 class GroundTruthDataset(BaseDataset):
     def __init__(
-        self, blueprint, datasets_dir, dataset_name, split, download, size, device, memoize_gt
+        self,
+        blueprint,
+        datasets_dir,
+        dataset_name,
+        split,
+        download,
+        size,
+        device,
+        memoize_gt,
     ):
         super().__init__()
         self.size = size
@@ -83,6 +91,7 @@ class GroundTruthDataset(BaseDataset):
 # be possible to use big crops instead, e.g. to make images
 # square-shaped which would enable stacking in the batch dimension.
 
+
 class PrepareTrainingPairs(Module):
     def __init__(self, physics, crop_size=48, crop_location="random"):
         super().__init__()
@@ -135,9 +144,9 @@ class Dataset(BaseDataset):
         )
 
         self.prepare_training_pairs = PrepareTrainingPairs(
-                physics=self.physics,
-                **blueprint[PrepareTrainingPairs.__name__],
-            )
+            physics=self.physics,
+            **blueprint[PrepareTrainingPairs.__name__],
+        )
 
     def __len__(self):
         return len(self.ground_truth_dataset)
@@ -171,11 +180,15 @@ class Dataset(BaseDataset):
         if self.purpose == "train":
             # NOTE: This should ideally be done in the model.
             if self.noise2inverse:
-                T_n2i = Noise2InverseTransform(self.physics)
+                physics_filter = getattr(self.physics, "filter", None)
+                T_n2i = Noise2InverseTransform(
+                    task=self.physics.task,
+                    physics_filter=physics_filter,
+                    degradation_inverse_fn=self.physics.A_dagger,
+                )
                 x, y = T_n2i(x.unsqueeze(0), y.unsqueeze(0))
                 x = x.squeeze(0)
                 y = y.squeeze(0)
-
 
             # NOTE: This should ideally either be done in the model, or not at
             # all.
@@ -221,35 +234,34 @@ def get_dataset(args, purpose, physics, device):
     blueprint = {}
 
     blueprint[GroundTruthDataset.__name__] = {
-            # NOTE: This argument should be named according to the class
-            # GroundTruthDataset but happens to be used (wrongly) elsewhere and
-            # this must be dealt with first
-            "dataset_name": args.dataset,
-            "datasets_dir": args.GroundTruthDataset__datasets_dir,
-            "download": args.GroundTruthDataset__download,
-            "size": args.GroundTruthDataset__size,
-        }
+        # NOTE: This argument should be named according to the class
+        # GroundTruthDataset but happens to be used (wrongly) elsewhere and
+        # this must be dealt with first
+        "dataset_name": args.dataset,
+        "datasets_dir": args.GroundTruthDataset__datasets_dir,
+        "download": args.GroundTruthDataset__download,
+        "size": args.GroundTruthDataset__size,
+    }
 
     blueprint[PrepareTrainingPairs.__name__] = {
-            "crop_size": args.PrepareTrainingPairs__crop_size,
-            "crop_location": args.PrepareTrainingPairs__crop_location,
-        }
-
+        "crop_size": args.PrepareTrainingPairs__crop_size,
+        "crop_location": args.PrepareTrainingPairs__crop_location,
+    }
 
     blueprint[SingleImageDataset.__name__] = {
-            "image_path": args.SingleImageDataset__image_path,
-            "duplicates_count": args.SingleImageDataset__duplicates_count,
-        }
+        "image_path": args.SingleImageDataset__image_path,
+        "duplicates_count": args.SingleImageDataset__duplicates_count,
+    }
 
     return Dataset(
-            blueprint=blueprint,
-            device=device,
-            physics=physics,
-            purpose=purpose,
-            css=css,
-            noise2inverse=noise2inverse,
-            split=split,
-            memoize_gt=memoize_gt,
-            # NOTE: This should be set to true.
-            unique_seeds=False,
+        blueprint=blueprint,
+        device=device,
+        physics=physics,
+        purpose=purpose,
+        css=css,
+        noise2inverse=noise2inverse,
+        split=split,
+        memoize_gt=memoize_gt,
+        # NOTE: This should be set to true.
+        unique_seeds=False,
     )

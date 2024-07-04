@@ -13,6 +13,7 @@ from metrics import psnr_fn, ssim_fn
 from models import get_model
 from physics import get_physics
 from settings import DefaultArgParser
+from noise2inverse import Noise2InverseModel
 
 torch.manual_seed(0)
 np.random.seed(0)
@@ -79,10 +80,7 @@ if args.weights is not None:
 
     model.load_state_dict(weights)
 
-dataset = get_dataset(args=args,
-                      purpose="test",
-                      physics=physics,
-                      device=args.device)
+dataset = get_dataset(args=args, purpose="test", physics=physics, device=args.device)
 
 psnr_list = []
 ssim_list = []
@@ -119,9 +117,13 @@ for i in tqdm(indices):
     if args.model_kind != "dip":
         with torch.no_grad():
             if args.noise2inverse:
-                from noise2inverse import Noise2InverseModel
-
-                model = Noise2InverseModel(model, physics)
+                physics_filter = getattr(physics, "filter", None)
+                model = Noise2InverseModel(
+                    backbone=model,
+                    task=physics.task,
+                    physics_filter=physics_filter,
+                    degradation_inverse_fn=physics.A_dagger,
+                )
                 x_hat = model(y)
                 model = model.backbone
             elif args.r2r:

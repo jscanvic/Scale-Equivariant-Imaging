@@ -17,7 +17,6 @@ from metrics import psnr_fn
 from models import get_model
 from training import save_training_state, get_model_state_dict
 from physics import get_physics
-from noise2inverse import Noise2InverseModel
 from settings import DefaultArgParser
 
 parser = DefaultArgParser()
@@ -78,10 +77,7 @@ model = get_model(
 model.to(args.device)
 model.train()
 
-dataset = get_dataset(args=args,
-                      purpose="train",
-                      physics=physics,
-                      device=args.device)
+dataset = get_dataset(args=args, purpose="train", physics=physics, device=args.device)
 
 # NOTE: This should be in the loss itself.
 if args.partial_sure:
