@@ -34,14 +34,7 @@ parser.add_argument("--tv_lambd", type=float, default=None)
 parser.add_argument("--tv_max_iter", type=int, default=300)
 args = parser.parse_args()
 
-physics = get_physics(
-    args.task,
-    noise_level=args.noise_level,
-    kernel_path=args.kernel,
-    sr_factor=args.sr_factor,
-    device=args.device,
-    true_adjoint=args.physics_true_adjoint,
-)
+physics = get_physics(args, device=args.device)
 
 if args.dip_iterations is not None:
     dip_iterations = args.dip_iterations

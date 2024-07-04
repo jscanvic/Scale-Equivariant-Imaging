@@ -59,20 +59,18 @@ class PhysicsManager:
 # NOTE: The borders of blurred out images should be cropped out in order to avoid boundary effects.
 
 
-def get_physics(
-    task,
-    noise_level,
-    kernel_path=None,
-    sr_factor=None,
-    device="cpu",
-    true_adjoint=False,
-):
+def get_physics(args, device):
+    blueprint = {}
+    blueprint[PhysicsManager.__name__] = {
+            "task": args.task,
+            "noise_level": args.noise_level,
+            "kernel_path": args.kernel_path,
+            "sr_factor": args.sr_factor,
+            "true_adjoint": args.true_adjoint,
+        }
+
     physics_manager = PhysicsManager(
-        task=task,
-        noise_level=noise_level,
-        kernel_path=kernel_path,
-        sr_factor=sr_factor,
         device=device,
-        true_adjoint=true_adjoint,
+        **blueprint[PhysicsManager.__name__],
     )
     return physics_manager.get_physics()

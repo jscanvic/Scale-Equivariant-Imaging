@@ -55,13 +55,7 @@ data_parallel_devices = (
 
 # NOTE: This should ideally take less arguments and let the function extract
 # what it needs from the args directly.
-physics = get_physics(
-    task=args.task,
-    noise_level=args.noise_level,
-    kernel_path=args.kernel,
-    sr_factor=args.sr_factor,
-    device=args.device,
-)
+physics = get_physics(args, device=args.device)
 
 # NOTE: This should ideally take less arguments.
 model = get_model(
