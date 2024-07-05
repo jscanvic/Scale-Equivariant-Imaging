@@ -2,11 +2,7 @@ import os
 
 import torch
 
-from models import get_model_state_dict as __get_model_state_dict
-
-
-def get_model_state_dict(model):
-    return __get_model_state_dict(model)
+from models import get_weights
 
 
 def save_training_state(epoch, model, optimizer, scheduler, state_path):
@@ -22,13 +18,13 @@ def save_training_state(epoch, model, optimizer, scheduler, state_path):
     save_dir = os.path.dirname(state_path)
     os.makedirs(save_dir, exist_ok=True)
 
-    model_state_dict = get_model_state_dict(model)
+    weights = get_weights(model)
 
     print(f"writing the training state to the file {state_path}")
     torch.save(
         {
             "epoch": epoch,
-            "params": model_state_dict,
+            "params": weights,
             "optimizer": optimizer.state_dict(),
             "scheduler": scheduler.state_dict(),
         },

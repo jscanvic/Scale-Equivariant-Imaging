@@ -22,12 +22,37 @@ class Identity(Module):
 
 # NOTE: This should ideally be a method of the model itself with an
 # accompanying function to load the weights back in.
-def get_model_state_dict(model):
-    if not isinstance(model, DataParallel):
-        model_state_dict = model.state_dict()
+def get_weights(model):
+    if isinstance(model, DataParallel):
+        return get_weights(model.module)
+
+    if isinstance(model, Model):
+        weights = model.get_weights()
     else:
-        model_state_dict = model.module.state_dict()
-    return model_state_dict
+        weights = model.module.state_dict()
+    return weights
+
+def load_weights(model, weights):
+    if isinstance(model, Model):
+        model.load_weights(weights)
+    else:
+        model.load_state_dict(weights)
+
+
+
+class Model(Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, x):
+        return self.model(x)
+
+    def get_weights(self):
+        return get_weights(self.model)
+
+    def load_weights(self, state_dict):
+        self.model.load_state_dict(state_dict)
 
 
 # NOTE: There should be a Model class and the function get_model would return
@@ -87,6 +112,7 @@ def get_model(
             resi_connection="1conv",
             pretrained=None,
         )
+        model = Model(model)
     elif kind == "CNN":
         upsampling_rate = sr_factor if task == "sr" else 1
         unet_residual = args.unet_residual
