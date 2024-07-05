@@ -154,14 +154,16 @@ class UNet(Module):
     def __init__(
         self,
         in_channels,
-        scales=5,
-        num_conv_blocks=5,
-        rate=2,
-        residual=False,
+        scales,
+        num_conv_blocks,
+        rate,
+        residual,
+        inner_residual,
     ):
         super().__init__()
         self.scales = scales
         self.residual = residual
+        self.inner_residual = inner_residual
 
         self.conv_sequences = ModuleList()
         self.downsampling_layers = ModuleList()
@@ -210,7 +212,10 @@ class UNet(Module):
         queue = []
 
         for _ in range(self.scales - 1):
+            xb = x
             x = next(conv_it)(x)
+            if self.inner_residual:
+                x = x + xb
             queue.append(x)
             x = next(downsampling_it)(x)
 
@@ -231,7 +236,7 @@ class UNet(Module):
 
 class ConvNeuralNetwork(Module):
     def __init__(
-        self, in_channels, upsampling_rate, unet_residual, num_conv_blocks=5, scales=5
+        self, in_channels, upsampling_rate, unet_residual, unet_inner_residual, num_conv_blocks=5, scales=5
     ):
         super().__init__()
         self.seq = Sequential()
@@ -248,6 +253,8 @@ class ConvNeuralNetwork(Module):
             scales=scales,
             num_conv_blocks=num_conv_blocks,
             residual=unet_residual,
+            rate=2,
+            inner_residual=unet_inner_residual,
         )
         self.seq.append(module)
 

@@ -44,7 +44,7 @@ def get_model(
     tv_max_iter = getattr(args, "tv_max_iter", None)
     kind = args.model_kind
 
-    if args.dip_iterations is not None:
+    if hasattr(args, "dip_iterations") and args.dip_iterations is not None:
         dip_iterations = args.dip_iterations
     else:
         if args.task == "deblurring" and "Gaussian" in args.kernel:
@@ -90,11 +90,13 @@ def get_model(
     elif kind == "CNN":
         upsampling_rate = sr_factor if task == "sr" else 1
         unet_residual = args.unet_residual
+        unet_inner_residual = args.UNet__inner_residual
         num_conv_blocks = args.unet_num_conv_blocks
         model = ConvNeuralNetwork(
             in_channels=3,
             upsampling_rate=upsampling_rate,
             unet_residual=unet_residual,
+            unet_inner_residual=unet_inner_residual,
             num_conv_blocks=num_conv_blocks,
         )
     elif kind == "dip":

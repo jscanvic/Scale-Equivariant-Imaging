@@ -39,6 +39,7 @@ class DefaultArgParser(ArgumentParser):
         )
         self.add_argument("--model_kind", type=str, default="swinir")
         self.add_argument("--unet_residual", action=BooleanOptionalAction, default=True)
+        self.add_argument("--UNet__inner_residual", action=BooleanOptionalAction, default=True)
         self.add_argument("--unet_num_conv_blocks", type=int, default=5)
         self.add_argument("--SingleImageDataset__image_path", type=str, default=None)
         self.add_argument(

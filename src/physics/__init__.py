@@ -64,9 +64,9 @@ def get_physics(args, device):
     blueprint[PhysicsManager.__name__] = {
         "task": args.task,
         "noise_level": args.noise_level,
-        "kernel_path": args.kernel_path,
+        "kernel_path": args.kernel,
         "sr_factor": args.sr_factor,
-        "true_adjoint": args.true_adjoint,
+        "true_adjoint": args.physics_true_adjoint,
     }
 
     physics_manager = PhysicsManager(
