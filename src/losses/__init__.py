@@ -53,7 +53,6 @@ class ProposedLoss(Module):
     def __init__(
         self,
         sure_alternative,
-        method,
         scale_antialias,
         noise_level,
         stop_gradient,
@@ -65,9 +64,19 @@ class ProposedLoss(Module):
     ):
         super().__init__()
 
+        if transforms == "Scaling_Transforms":
+            ei_transform = ScalingTransform(
+                kind="padded", antialias=scale_antialias
+            )
+        elif transforms == "Rotations":
+            ei_transform = Rotate()
+        elif transforms == "Shifts":
+            ei_transform = Shift()
+        else:
+            raise ValueError(f"Unknown transforms: {transforms}")
+
         assert sure_alternative in [None, "r2r"]
-        if sure_alternative == "r2r" and method == "proposed":
-            ei_transform = ScalingTransform(kind="padded", antialias=scale_antialias)
+        if sure_alternative == "r2r":
             loss_fns = [
                 R2REILoss(
                     transform=ei_transform,
@@ -84,17 +93,6 @@ class ProposedLoss(Module):
                 margin=sure_margin,
             )
             loss_fns = [sure_loss]
-
-            if transforms == "Scaling_Transforms":
-                ei_transform = ScalingTransform(
-                    kind="padded", antialias=scale_antialias
-                )
-            elif transforms == "Rotations":
-                ei_transform = Rotate()
-            elif transforms == "Shifts":
-                ei_transform = Shift()
-            else:
-                raise ValueError(f"Unknown transforms: {transforms}")
 
             equivariant_loss = EILoss(
                 metric=mse(),
@@ -138,17 +136,12 @@ class Loss(Module):
                 averaged_cst=sure_averaged_cst,
                 margin=sure_margin,
             )
-        elif method in ["proposed", "ei-rotate", "ei-shift"]:
-            assert method not in [
-                "ei-rotate",
-                "ei-shift",
-            ], f"Deprecated method: {method}"
+        elif method == "proposed":
             self.loss = ProposedLoss(
                 noise_level=noise_level,
                 sure_cropped_div=sure_cropped_div,
                 sure_averaged_cst=sure_averaged_cst,
                 sure_margin=sure_margin,
-                method=method,
                 **blueprint[ProposedLoss.__name__],
             )
         else:
