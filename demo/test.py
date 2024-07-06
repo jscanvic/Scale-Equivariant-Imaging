@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from datasets import get_dataset
 from metrics import psnr_fn, ssim_fn
-from models import get_model, load_weights
+from models import get_model
 from physics import get_physics
 from settings import DefaultArgParser
 from noise2inverse import Noise2InverseModel
@@ -56,7 +56,7 @@ if args.weights is not None:
     if "params" in weights:
         weights = weights["params"]
 
-    load_weights(model, weights)
+    model.load_weights(weights)
 
 dataset = get_dataset(args=args, purpose="test", physics=physics, device=args.device)
 

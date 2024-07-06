@@ -2,8 +2,6 @@ import os
 
 import torch
 
-from models import get_weights
-
 
 def save_training_state(epoch, model, optimizer, scheduler, state_path):
     """
@@ -18,7 +16,7 @@ def save_training_state(epoch, model, optimizer, scheduler, state_path):
     save_dir = os.path.dirname(state_path)
     os.makedirs(save_dir, exist_ok=True)
 
-    weights = get_weights(model)
+    weights = model.get_weights()
 
     print(f"writing the training state to the file {state_path}")
     torch.save(

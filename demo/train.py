@@ -14,7 +14,7 @@ from torchmetrics import MeanMetric
 from datasets import get_dataset
 from losses import get_loss
 from metrics import psnr_fn
-from models import get_model, get_weights
+from models import get_model
 from training import save_training_state
 from physics import get_physics
 from settings import DefaultArgParser
@@ -159,5 +159,5 @@ for epoch in range(epochs):
 
 # save the weights after training completion
 weights_path = f"{args.out_dir}/weights.pt"
-weights = get_weights(model)
+weights = model.get_weights()
 torch.save(weights, weights_path)
