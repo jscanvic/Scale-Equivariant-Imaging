@@ -12,7 +12,7 @@ def sample_from(values, shape=(1,), dtype=torch.float32, device="cpu"):
 
 
 def sample_downsampling_parameters(image_count, device, dtype):
-    downsampling_rate = sample_from([0.75, 0.5], shape=(image_count,), device=device)
+    downsampling_rate = sample_from([0.75, 0.5], shape=(image_count,), dtype=dtype, device=device)
 
     # The coordinates are in [-1, 1].
     center = torch.rand((image_count, 2), dtype=dtype, device=device)
@@ -92,10 +92,51 @@ class PaddedDownsamplingTransform(Module):
         return x
 
 
-class ScalingTransform(Module):
+def downsampling_transform(x, downsampling_rate, mode, antialiased):
+    xs = []
+    for i in range(x.shape[0]):
+        z = F.interpolate(
+            x[i : i + 1, :, :, :],
+            scale_factor=downsampling_rate[i].item(),
+            mode=mode,
+            antialias=antialiased,
+        )
+        z = z.squeeze(0)
+        xs.append(z)
+    return torch.stack(xs)
+
+
+class NormalDownsamplingTransform(Module):
     def __init__(self, antialias=False):
         super().__init__()
-        self.transform = PaddedDownsamplingTransform(antialias=antialias)
+        self.antialias = antialias
+
+    def forward(self, x):
+        downsampling_rate, _ = sample_downsampling_parameters(
+            image_count=x.shape[0],
+            device=x.device,
+            dtype=x.dtype,
+        )
+
+        x = downsampling_transform(
+            x,
+            downsampling_rate=downsampling_rate,
+            mode="bicubic",
+            antialiased=self.antialias,
+        )
+
+        return x
+
+
+class ScalingTransform(Module):
+    def __init__(self, kind, antialias):
+        super().__init__()
+        if kind == "padded":
+            self.transform = PaddedDownsamplingTransform(antialias=antialias)
+        elif kind == "normal":
+            self.transform = NormalDownsamplingTransform(antialias=antialias)
+        else:
+            raise ValueError(f"Unknown kind: {kind}")
 
     def forward(self, x):
         return self.transform(x)
