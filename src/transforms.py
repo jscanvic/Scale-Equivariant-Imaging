@@ -107,7 +107,7 @@ class PaddedDownsamplingTransform(Module):
         return x
 
 
-def downsampling_transform(x, downsampling_rate, mode, antialiased):
+def normal_downsampling_transform(x, downsampling_rate, mode, antialiased):
     xs = []
     for i in range(x.shape[0]):
         z = F.interpolate(
@@ -133,7 +133,7 @@ class NormalDownsamplingTransform(Module):
             dtype=x.dtype,
         )
 
-        x = downsampling_transform(
+        x = normal_downsampling_transform(
             x,
             downsampling_rate=downsampling_rate,
             mode="bicubic",
