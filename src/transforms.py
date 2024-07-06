@@ -11,22 +11,19 @@ def sample_from(values, shape=(1,), dtype=torch.float32, device="cpu"):
     return values[indices]
 
 
-class Scale(Module):
-    def __init__(
-        self, factors=None, padding_mode="reflection", mode="bicubic", antialias=False
-    ):
+class PaddedScalingTransform(Module):
+    def __init__(self, antialias=False):
         super().__init__()
 
-        self.factors = factors or [0.75, 0.5]
-        self.padding_mode = padding_mode
-        self.mode = mode
+        self.padding_mode = "reflection"
+        self.mode = "bicubic"
         self.antialias = antialias
 
     def forward(self, x):
         b, _, h, w = x.shape
 
         # Sample a random scale factor for each batch element
-        factor = sample_from(self.factors, shape=(b,), device=x.device)
+        factor = sample_from([.75, .5], shape=(b,), device=x.device)
 
         # Sample a random transformation center for each batch element
         # with coordinates in [-1, 1]
@@ -74,3 +71,12 @@ class Scale(Module):
             )
 
         return x
+
+
+class ScalingTransform(Module):
+    def __init__(self, antialias=False):
+        super().__init__()
+        self.transform = PaddedScalingTransform(antialias=antialias)
+
+    def forward(self, x):
+        return self.transform(x)

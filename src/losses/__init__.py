@@ -3,7 +3,7 @@ from deepinv.loss import SupLoss, EILoss
 from deepinv.loss.metric import mse
 from deepinv.transform import Rotate, Shift
 
-from transforms import Scale
+from transforms import ScalingTransform
 from .r2r import R2REILoss
 from .sure import SureGaussianLoss
 
@@ -67,7 +67,7 @@ class ProposedLoss(Module):
 
         assert sure_alternative in [None, "r2r"]
         if sure_alternative == "r2r" and method == "proposed":
-            ei_transform = Scale(antialias=scale_antialias)
+            ei_transform = ScalingTransform(antialias=scale_antialias)
             loss_fns = [
                 R2REILoss(
                     transform=ei_transform,
@@ -86,7 +86,7 @@ class ProposedLoss(Module):
             loss_fns = [sure_loss]
 
             if transforms == "Scaling_Transforms":
-                ei_transform = Scale(antialias=scale_antialias)
+                ei_transform = ScalingTransform(antialias=scale_antialias)
             elif transforms == "Rotations":
                 ei_transform = Rotate()
             elif transforms == "Shifts":
