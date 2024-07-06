@@ -3,6 +3,7 @@
 import bm3d
 
 import os
+from math import isnan
 
 import torch
 import numpy as np
@@ -117,15 +118,8 @@ for i in tqdm(indices):
     else:
         x_hat = model(y).detach()
 
-    assert x_hat.shape[1] in [1, 3]
-
     psnr_val = psnr_fn(x_hat, x).item()
     ssim_val = ssim_fn(x_hat, x).item()
-
-    from math import isnan
-
-    if isnan(psnr_val) or isnan(ssim_val):
-        breakpoint()
 
     psnr_list.append(psnr_val)
     ssim_list.append(ssim_val)
