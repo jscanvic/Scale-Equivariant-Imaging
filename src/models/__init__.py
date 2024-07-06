@@ -157,12 +157,11 @@ def get_model(
     }
 
     blueprint[Model.__name__] = {
-            "task": args.task,
-            "sr_factor": args.sr_factor,
-            "noise_level": args.noise_level,
-            "kind": args.model_kind,
-        }
-
+        "task": args.task,
+        "sr_factor": args.sr_factor,
+        "noise_level": args.noise_level,
+        "kind": args.model_kind,
+    }
 
     model = Model(
         blueprint=blueprint,

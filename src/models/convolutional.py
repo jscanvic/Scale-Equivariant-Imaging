@@ -236,7 +236,13 @@ class UNet(Module):
 
 class ConvNeuralNetwork(Module):
     def __init__(
-        self, in_channels, upsampling_rate, unet_residual, unet_inner_residual, num_conv_blocks=5, scales=5
+        self,
+        in_channels,
+        upsampling_rate,
+        unet_residual,
+        unet_inner_residual,
+        num_conv_blocks=5,
+        scales=5,
     ):
         super().__init__()
         self.seq = Sequential()
