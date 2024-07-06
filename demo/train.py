@@ -18,6 +18,7 @@ from models import get_model
 from training import save_training_state
 from physics import get_physics
 from settings import DefaultArgParser
+from scheduler import get_lr_scheduler
 
 parser = DefaultArgParser()
 # NOTE: Some of these arguments should be better tied to their respective class.
@@ -43,6 +44,7 @@ parser.add_argument("--sure_cropped_div", action=BooleanOptionalAction, default=
 parser.add_argument("--sure_averaged_cst", action=BooleanOptionalAction, default=None)
 parser.add_argument("--partial_sure_sr", action=BooleanOptionalAction, default=False)
 parser.add_argument("--sure_margin", type=int, default=None)
+parser.add_argument("--lr_scheduler_kind", type=str, default="multi_step_decay")
 args = parser.parse_args()
 
 # NOTE: This should ideally take less arguments and let the function extract
@@ -89,8 +91,7 @@ dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 lr = 2e-4 if args.task == "sr" else 5e-4
 # NOTE: It'd be better to use the default values for Adam.
 optimizer = Adam(model.parameters(), lr=lr, betas=(0.9, 0.99))
-# NOTE: It'd be better to use a scheduler with delayed linear decay.
-scheduler = MultiStepLR(optimizer, milestones=[250, 400, 450, 475], gamma=0.5)
+scheduler = get_lr_scheduler(optimizer=optimizer, epochs=epochs, lr_scheduler_kind=args.lr_scheduler_kind)
 
 
 # NOTE: It'd be better to use approximately the same number of epochs in all
