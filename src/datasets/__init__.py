@@ -254,6 +254,10 @@ def get_dataset(args, purpose, physics, device):
         "duplicates_count": args.SingleImageDataset__duplicates_count,
     }
 
+    blueprint[Dataset.__name__] = {
+            "unique_seeds": args.Dataset__unique_seeds,
+        }
+
     return Dataset(
         blueprint=blueprint,
         device=device,
@@ -263,6 +267,5 @@ def get_dataset(args, purpose, physics, device):
         noise2inverse=noise2inverse,
         split=split,
         memoize_gt=memoize_gt,
-        # NOTE: This should be set to true.
-        unique_seeds=False,
+        **blueprint[Dataset.__name__],
     )
