@@ -93,7 +93,9 @@ dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 # NOTE: It'd be better if the learning rate was the same for all tasks.
 lr = 2e-4 if args.task == "sr" else 5e-4
 optimizer = Adam(model.parameters(), lr=lr, betas=(0.9, args.optimizer_beta2))
-scheduler = get_lr_scheduler(optimizer=optimizer, epochs=epochs, lr_scheduler_kind=args.lr_scheduler_kind)
+scheduler = get_lr_scheduler(
+    optimizer=optimizer, epochs=epochs, lr_scheduler_kind=args.lr_scheduler_kind
+)
 
 
 # NOTE: It'd be better to use approximately the same number of epochs in all

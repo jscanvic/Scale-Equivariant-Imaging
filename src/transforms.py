@@ -12,7 +12,9 @@ def sample_from(values, shape=(1,), dtype=torch.float32, device="cpu"):
 
 
 def sample_downsampling_parameters(image_count, device, dtype):
-    downsampling_rate = sample_from([0.75, 0.5], shape=(image_count,), dtype=dtype, device=device)
+    downsampling_rate = sample_from(
+        [0.75, 0.5], shape=(image_count,), dtype=dtype, device=device
+    )
 
     # The coordinates are in [-1, 1].
     center = torch.rand((image_count, 2), dtype=dtype, device=device)
@@ -33,7 +35,10 @@ def get_downsampling_grid(shape, downsampling_rate, center, dtype, device):
     U, V = torch.meshgrid(u, v)
     grid = torch.stack([V, U], dim=-1)
     grid = grid.view(1, h, w, 2).repeat(b, 1, 1, 1)
-    grid = 1 / downsampling_rate.view(b, 1, 1, 1).expand_as(grid) * (grid - center) + center
+    grid = (
+        1 / downsampling_rate.view(b, 1, 1, 1).expand_as(grid) * (grid - center)
+        + center
+    )
 
     return grid
 
@@ -52,13 +57,23 @@ def alias_free_interpolate(x, downsampling_rate, interpolation_mode):
     return torch.stack(xs)
 
 
-def padded_downsampling_transform(x, downsampling_rate, center, mode, padding_mode, antialiased):
+def padded_downsampling_transform(
+    x, downsampling_rate, center, mode, padding_mode, antialiased
+):
     shape = x.shape
 
     if antialiased:
-        x = alias_free_interpolate(x, downsampling_rate=downsampling_rate, interpolation_mode=mode)
+        x = alias_free_interpolate(
+            x, downsampling_rate=downsampling_rate, interpolation_mode=mode
+        )
 
-    grid = get_downsampling_grid(shape=shape, downsampling_rate=downsampling_rate, center=center, dtype=x.dtype, device=x.device)
+    grid = get_downsampling_grid(
+        shape=shape,
+        downsampling_rate=downsampling_rate,
+        center=center,
+        dtype=x.dtype,
+        device=x.device,
+    )
     return F.grid_sample(
         x,
         grid,
@@ -75,10 +90,10 @@ class PaddedDownsamplingTransform(Module):
 
     def forward(self, x):
         downsampling_rate, center = sample_downsampling_parameters(
-                image_count=x.shape[0],
-                device=x.device,
-                dtype=x.dtype,
-            )
+            image_count=x.shape[0],
+            device=x.device,
+            dtype=x.dtype,
+        )
 
         x = padded_downsampling_transform(
             x,

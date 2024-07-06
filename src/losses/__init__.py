@@ -67,10 +67,7 @@ class ProposedLoss(Module):
 
         assert sure_alternative in [None, "r2r"]
         if sure_alternative == "r2r" and method == "proposed":
-            ei_transform = ScalingTransform(
-                    kind="padded",
-                    antialias=scale_antialias
-                    )
+            ei_transform = ScalingTransform(kind="padded", antialias=scale_antialias)
             loss_fns = [
                 R2REILoss(
                     transform=ei_transform,
@@ -90,9 +87,8 @@ class ProposedLoss(Module):
 
             if transforms == "Scaling_Transforms":
                 ei_transform = ScalingTransform(
-                        kind="padded",
-                        antialias=scale_antialias
-                        )
+                    kind="padded", antialias=scale_antialias
+                )
             elif transforms == "Rotations":
                 ei_transform = Rotate()
             elif transforms == "Shifts":

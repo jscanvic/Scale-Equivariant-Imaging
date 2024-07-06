@@ -255,8 +255,8 @@ def get_dataset(args, purpose, physics, device):
     }
 
     blueprint[Dataset.__name__] = {
-            "unique_seeds": args.Dataset__unique_seeds,
-        }
+        "unique_seeds": args.Dataset__unique_seeds,
+    }
 
     return Dataset(
         blueprint=blueprint,
