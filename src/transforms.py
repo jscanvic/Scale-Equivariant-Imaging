@@ -11,78 +11,78 @@ def sample_from(values, shape=(1,), dtype=torch.float32, device="cpu"):
     return values[indices]
 
 
-def sample_scaling_parameters(image_count, device, dtype):
-    # Sample a random scale factor for each batch element
-    factor = sample_from([0.75, 0.5], shape=(image_count,), device=device)
+def sample_downsampling_parameters(image_count, device, dtype):
+    downsampling_rate = sample_from([0.75, 0.5], shape=(image_count,), device=device)
 
-    # Sample a random transformation center for each batch element
-    # with coordinates in [-1, 1]
+    # The coordinates are in [-1, 1].
     center = torch.rand((image_count, 2), dtype=dtype, device=device)
     center = center.view(image_count, 1, 1, 2)
     center = 2 * center - 1
 
-    return factor, center
+    return downsampling_rate, center
 
 
-def padded_scaling_transform(x, factor, center, mode, padding_mode, antialiased):
-    b, _, h, w = x.shape
+def get_downsampling_grid(shape, downsampling_rate, center, dtype, device):
+    b, _, h, w = shape
 
     # Compute the sampling grid for the scale transformation
-    u = torch.arange(w, dtype=x.dtype, device=x.device)
-    v = torch.arange(h, dtype=x.dtype, device=x.device)
+    u = torch.arange(w, dtype=dtype, device=device)
+    v = torch.arange(h, dtype=dtype, device=device)
     u = 2 / w * u - 1
     v = 2 / h * v - 1
     U, V = torch.meshgrid(u, v)
     grid = torch.stack([V, U], dim=-1)
     grid = grid.view(1, h, w, 2).repeat(b, 1, 1, 1)
-    grid = 1 / factor.view(b, 1, 1, 1).expand_as(grid) * (grid - center) + center
+    grid = 1 / downsampling_rate.view(b, 1, 1, 1).expand_as(grid) * (grid - center) + center
 
-    if not antialiased:
-        x = F.grid_sample(
-            x,
-            grid,
-            mode=mode,
-            padding_mode=padding_mode,
-            align_corners=True,
+    return grid
+
+
+def alias_free_interpolate(x, downsampling_rate, interpolation_mode):
+    xs = []
+    for i in range(x.shape[0]):
+        z = F.interpolate(
+            x[i : i + 1, :, :, :],
+            scale_factor=downsampling_rate[i].item(),
+            mode=interpolation_mode,
+            antialias=True,
         )
-    else:
-        xs = []
-        for i in range(x.shape[0]):
-            # Apply the anti-aliasing filter
-            z = F.interpolate(
-                x[i : i + 1, :, :, :],
-                scale_factor=factor[i].item(),
-                mode=mode,
-                antialias=True,
-            )
-            z = F.grid_sample(
-                z,
-                grid[i : i + 1],
-                mode=mode,
-                padding_mode=padding_mode,
-                align_corners=True,
-            )
-            z = z.squeeze(0)
-            xs.append(z)
-        x = torch.stack(xs)
-    return x
+        z = z.squeeze(0)
+        xs.append(z)
+    return torch.stack(xs)
 
 
-class PaddedScalingTransform(Module):
+def padded_downsampling_transform(x, downsampling_rate, center, mode, padding_mode, antialiased):
+    shape = x.shape
+
+    if antialiased:
+        x = alias_free_interpolate(x, downsampling_rate=downsampling_rate, interpolation_mode=mode)
+
+    grid = get_downsampling_grid(shape=shape, downsampling_rate=downsampling_rate, center=center, dtype=x.dtype, device=x.device)
+    return F.grid_sample(
+        x,
+        grid,
+        mode=mode,
+        padding_mode=padding_mode,
+        align_corners=True,
+    )
+
+
+class PaddedDownsamplingTransform(Module):
     def __init__(self, antialias=False):
         super().__init__()
         self.antialias = antialias
 
     def forward(self, x):
-        factor, center = sample_scaling_parameters(
+        downsampling_rate, center = sample_downsampling_parameters(
                 image_count=x.shape[0],
                 device=x.device,
                 dtype=x.dtype,
             )
 
-        x = padded_scaling_transform(
+        x = padded_downsampling_transform(
             x,
-            factor=factor,
+            downsampling_rate=downsampling_rate,
             center=center,
             antialiased=self.antialias,
             mode="bicubic",
@@ -95,7 +95,7 @@ class PaddedScalingTransform(Module):
 class ScalingTransform(Module):
     def __init__(self, antialias=False):
         super().__init__()
-        self.transform = PaddedScalingTransform(antialias=antialias)
+        self.transform = PaddedDownsamplingTransform(antialias=antialias)
 
     def forward(self, x):
         return self.transform(x)
