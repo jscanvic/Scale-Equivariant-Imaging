@@ -100,7 +100,8 @@ class Model(Module):
                 self.model, device_ids=data_parallel_devices, output_device=device
             )
 
-    def forward(self, x):
+    # NOTE: It'd be better to avoid using args.
+    def forward(self, x, *args):
         return self.model(x)
 
     def get_backbone(self):

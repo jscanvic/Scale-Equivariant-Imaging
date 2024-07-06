@@ -4,7 +4,7 @@ import torch.nn as nn
 import numpy as np
 
 
-def mc_div(y1, y, f, physics, tau, margin=0):
+def mc_div(y1, y, model, physics, tau, margin=0):
     assert margin is not None
     if margin == 0:
         b = torch.randn_like(y)
@@ -21,7 +21,7 @@ def mc_div(y1, y, f, physics, tau, margin=0):
             *ip_shape, device=y.device, dtype=y.dtype
         )
 
-    y2 = physics.A(f(y + b * tau, physics))
+    y2 = physics.A(model(y + b * tau))
 
     out = b * (y2 - y1) / tau
 
