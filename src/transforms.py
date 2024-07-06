@@ -3,7 +3,6 @@ from torch.nn import Module, functional as F
 
 
 def sample_from(values, shape=(1,), dtype=torch.float32, device="cpu"):
-    """Sample a random tensor from a list of values"""
     values = torch.tensor(values, device=device, dtype=dtype)
     N = torch.tensor(len(values), device=device, dtype=dtype)
     indices = torch.floor(N * torch.rand(shape, device=device, dtype=dtype)).to(
@@ -13,21 +12,6 @@ def sample_from(values, shape=(1,), dtype=torch.float32, device="cpu"):
 
 
 class Scale(Module):
-    """
-    2D Scaling.
-
-    Resample the input image on a grid obtained using
-    an isotropic dilation, with random scale factor
-    and origin. By default, the input image is viewed
-    as periodic and the output image is effectively padded
-    by reflections. Additionally, resampling is performed
-    using bicubic interpolation.
-
-    :param list factors: list of scale factors (default: [.75, .5])
-    :param str padding_mode: padding mode for grid sampling
-    :param str mode: interpolation mode for grid sampling
-    """
-
     def __init__(
         self, factors=None, padding_mode="reflection", mode="bicubic", antialias=False
     ):
