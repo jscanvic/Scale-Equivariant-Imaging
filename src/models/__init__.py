@@ -61,19 +61,19 @@ class Model(Module):
                 pretrained=None,
             )
         elif kind == "CNN":
-            model = ConvNeuralNetwork(
+            self.model = ConvNeuralNetwork(
                 in_channels=3,
                 upsampling_rate=sampling_rate,
                 **blueprint[ConvNeuralNetwork.__name__],
             )
         elif kind == "dip":
-            model = DeepImagePrior(
+            self.model = DeepImagePrior(
                 physics=physics,
                 sr_factor=sr_factor,
                 **blueprint[DeepImagePrior.__name__],
             )
         elif kind == "pnp":
-            model = PnPModel(
+            self.model = PnPModel(
                 channels=3,
                 early_stop=True,
                 physics=physics,
@@ -81,17 +81,17 @@ class Model(Module):
                 device=device,
             )
         elif kind == "bm3d":
-            model = BM3D(physics=physics, sigma_psd=noise_level / 255)
+            self.model = BM3D(physics=physics, sigma_psd=noise_level / 255)
         elif kind == "diffpir":
-            model = DiffPIR(physics=physics)
+            self.model = DiffPIR(physics=physics)
         elif kind == "dps":
-            model = DPS(physics=physics, device=device)
+            self.model = DPS(physics=physics, device=device)
         elif kind == "tv":
-            model = TV(physics=physics, **blueprint[TV.__name__])
+            self.model = TV(physics=physics, **blueprint[TV.__name__])
         elif kind == "id":
-            model = Identity()
+            self.model = Identity()
         elif kind == "up":
-            model = Upsample(factor=sr_factor)
+            self.model = Upsample(factor=sr_factor)
         else:
             raise ValueError(f"Unknown model kind: {kind}")
 
