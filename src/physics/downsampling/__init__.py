@@ -7,15 +7,15 @@ from deepinv.physics import adjoint_function
 
 
 class Downsampling(LinearPhysics):
-    def __init__(self, ratio, antialias, true_adjoint=False):
+    def __init__(self, rate, antialias, true_adjoint=False):
         super().__init__()
-        self.ratio = ratio
+        self.rate = rate
         self.antialias = antialias
         self.true_adjoint = true_adjoint
 
     def A(self, x):
         return interpolate(
-            x, scale_factor=1 / self.ratio, mode="bicubic", antialias=self.antialias
+            x, scale_factor=1 / self.rate, mode="bicubic", antialias=self.antialias
         )
 
     def A_adjoint(self, y):
@@ -24,12 +24,12 @@ class Downsampling(LinearPhysics):
             input_size = (
                 y.shape[0],
                 y.shape[1],
-                y.shape[2] * self.ratio,
-                y.shape[3] * self.ratio,
+                y.shape[2] * self.rate,
+                y.shape[3] * self.rate,
             )
             A_adjoint = adjoint_function(self.A, input_size=input_size, device=y.device)
             x = A_adjoint(y)
         else:
             # NOTE: This is deprecated.
-            x = interpolate(y, scale_factor=self.ratio, mode="bicubic")
+            x = interpolate(y, scale_factor=self.rate, mode="bicubic")
         return x

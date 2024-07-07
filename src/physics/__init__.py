@@ -11,42 +11,55 @@ from .blur import Blur
 # NOTE: There should ideally be a class combining the blur and downsampling operators.
 
 
+# NOTE: This might be better as a subclass of torch.Tensor. (See
+# torch.nn.Parameter for reference.)
+class BlurKernel:
+    def __init__(self, kernel_path):
+        self.kernel_path = kernel_path
+
+    def to_tensor(self, device):
+        if exists(self.kernel_path):
+            kernel = torch.load(self.kernel_path)
+        else:
+            kernel = get_kernel(name=self.kernel_path)
+        kernel = kernel.unsqueeze(0).unsqueeze(0).to(device)
+        return kernel
+
+
+
 class PhysicsManager:
 
     def __init__(
         self,
-        device,
+        blueprint,
         task,
-        noise_level=0,
-        kernel_path=None,
-        sr_factor=None,
-        true_adjoint=False,
+        device,
+        noise_level,
     ):
         if task == "deblurring":
-            if kernel_path != "ct_like":
-                if exists(kernel_path):
-                    kernel = torch.load(kernel_path)
-                else:
-                    kernel = get_kernel(name=kernel_path)
-                kernel = kernel.unsqueeze(0).unsqueeze(0).to(device)
-                self.physics = Blur(
-                    filter=kernel, padding="circular", device=device
-                )
-            else:
-                self.physics = CTLikeFilter()
-        elif task == "sr":
-            self.physics = Downsampling(
-                ratio=sr_factor, antialias=True, true_adjoint=true_adjoint
+            blur_kernel = BlurKernel(**blueprint[BlurKernel.__name__])
+            kernel = blur_kernel.to_tensor(device)
+            physics = Blur(
+                filter=kernel, padding="circular", device=device
             )
+        elif task == "sr":
+            physics = Downsampling(
+                antialias=True,
+                **blueprint[Downsampling.__name__]
+            )
+        elif task == "invert_a_tomography_like_filter":
+            physics = CTLikeFilter()
         else:
             raise ValueError(f"Unknown task: {task}")
 
+        physics.noise_model = GaussianNoise(sigma=noise_level / 255)
+
         # NOTE: These are meant to go.
         setattr(self, "task", task)
-        setattr(self.physics, "task", task)
-        setattr(self.physics, "__manager", self)
+        setattr(physics, "task", task)
+        setattr(physics, "__manager", self)
 
-        self.physics.noise_model = GaussianNoise(sigma=noise_level / 255)
+        self.physics = physics
 
     def get_physics(self):
         return self.physics
@@ -69,8 +82,14 @@ def get_physics(args, device):
     blueprint[PhysicsManager.__name__] = {
         "task": args.task,
         "noise_level": args.noise_level,
+    }
+
+    blueprint[BlurKernel.__name__] = {
         "kernel_path": args.kernel,
-        "sr_factor": args.sr_factor,
+    }
+
+    blueprint[Downsampling.__name__] = {
+        "rate": args.sr_factor,
         "true_adjoint": args.physics_true_adjoint,
     }
 
