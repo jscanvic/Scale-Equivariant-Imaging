@@ -2,6 +2,7 @@ import torch
 from deepinv.physics import GaussianNoise
 from os.path import exists
 
+from rng import fork_rng
 from .ct_like_filter import CTLikeFilter
 from .downsampling import Downsampling
 from .kernels import get_kernel
@@ -47,13 +48,24 @@ class PhysicsManager:
         else:
             raise ValueError(f"Unknown task: {self.task}")
 
-        # NOTE: This is meant to go.
+        # NOTE: These are meant to go.
         setattr(self.physics, "task", self.task)
+        setattr(self.physics, "__manager", self)
 
         self.physics.noise_model = GaussianNoise(sigma=self.noise_level / 255)
 
     def get_physics(self):
         return self.physics
+
+    def randomly_degrade(self, x, seed):
+        preserve_rng_state = seed is not None
+        with fork_rng(enabled=preserve_rng_state):
+            torch.manual_seed(seed)
+
+            x = self.physics.A(x)
+            x = self.physics.noise_model(x)
+        return x
+
 
 
 # NOTE: The borders of blurred out images should be cropped out in order to avoid boundary effects.

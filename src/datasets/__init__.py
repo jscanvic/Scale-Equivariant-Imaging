@@ -127,9 +127,14 @@ class Dataset(BaseDataset):
     ):
         super().__init__()
         self.purpose = purpose
+
+        # NOTE: The two are meant to be combined.
         self.physics = physics
+        self.physics_manager = self.physics.__manager
+
         self.css = css
         self.noise2inverse = noise2inverse
+
         # NOTE: the measurements should always be deterministic except for
         # supervised training. Although it can be dealt with in the loss as well.
         self.deterministic_measurements = purpose == "test"
@@ -154,32 +159,29 @@ class Dataset(BaseDataset):
     def __getitem__(self, index):
         x = self.ground_truth_dataset[index]
 
-        degradation_fn = self.physics.A
-        degradation_inverse_fn = self.physics.A_dagger
-        add_random_noise = self.physics.noise_model
-
         # NOTE: This should ideally be done in the class CSSLoss instead but
         # the border effects in the current implementation make it challenging.
         if self.css:
             x = x.unsqueeze(0)
-            x = degradation_fn(x)
-            x = add_random_noise(x)
+            x = self.physics_manager.randomly_degrade(x, seed=None)
             x = x.squeeze(0)
 
-        y = degradation_fn(x.unsqueeze(0))
-
         if self.deterministic_measurements:
-            seed = self.ground_truth_dataset.get_unique_id(index)
             if self.unique_seeds:
-                torch.manual_seed(seed)
+                seed = self.ground_truth_dataset.get_unique_id(index)
             else:
-                torch.manual_seed(0)
+                seed = 0
+        else:
+            seed = None
 
-        y = add_random_noise(y)
+        x = x.unsqueeze(0)
+        y = self.physics_manager.randomly_degrade(x, seed=seed)
         y = y.squeeze(0)
+        x = x.squeeze(0)
 
         if self.purpose == "train":
             # NOTE: This should ideally be done in the model.
+            degradation_inverse_fn = self.physics.A_dagger
             if self.noise2inverse:
                 physics_filter = getattr(self.physics, "filter", None)
                 T_n2i = Noise2InverseTransform(
