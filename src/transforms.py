@@ -12,7 +12,9 @@ def sample_from(values, shape=(1,), dtype=torch.float32, device="cpu"):
 
 
 def sample_downsampling_parameters(image_count, device, dtype, rates):
-    downsampling_rate = sample_from(rates, shape=(image_count,), dtype=dtype, device=device)
+    downsampling_rate = sample_from(
+        rates, shape=(image_count,), dtype=dtype, device=device
+    )
 
     # The coordinates are in [-1, 1].
     center = torch.rand((image_count, 2), dtype=dtype, device=device)
@@ -128,10 +130,9 @@ class NormalDownsamplingTransform(Module):
         self.downsampling_rates = downsampling_rates
 
     def forward(self, x):
-        downsampling_rate = sample_from(self.downsampling_rates,
-                                        shape=(),
-                                        dtype=x.dtype,
-                                        device=x.device)
+        downsampling_rate = sample_from(
+            self.downsampling_rates, shape=(), dtype=x.dtype, device=x.device
+        )
         downsampling_rate = downsampling_rate.item()
 
         x = normal_downsampling_transform(
@@ -150,14 +151,14 @@ class ScalingTransform(Module):
         downsampling_rates = [0.75, 0.5]
         if kind == "padded":
             self.transform = PaddedDownsamplingTransform(
-                    antialias=antialias,
-                    downsampling_rates=downsampling_rates,
-                )
+                antialias=antialias,
+                downsampling_rates=downsampling_rates,
+            )
         elif kind == "normal":
             self.transform = NormalDownsamplingTransform(
-                    antialias=antialias,
-                    downsampling_rates=downsampling_rates,
-                )
+                antialias=antialias,
+                downsampling_rates=downsampling_rates,
+            )
         else:
             raise ValueError(f"Unknown kind: {kind}")
 

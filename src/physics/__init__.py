@@ -67,7 +67,6 @@ class PhysicsManager:
         return x
 
 
-
 # NOTE: The borders of blurred out images should be cropped out in order to avoid boundary effects.
 
 
