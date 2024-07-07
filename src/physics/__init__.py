@@ -15,44 +15,38 @@ class PhysicsManager:
 
     def __init__(
         self,
+        device,
         task,
-        noise_level,
+        noise_level=0,
         kernel_path=None,
         sr_factor=None,
-        device="cpu",
         true_adjoint=False,
     ):
-        self.task = task
-        self.noise_level = noise_level
-        self.kernel_path = kernel_path
-        self.sr_factor = sr_factor
-        self.device = device
-        self.true_adjoint = true_adjoint
-
-        if self.task == "deblurring":
-            if self.kernel_path != "ct_like":
-                if exists(self.kernel_path):
-                    kernel = torch.load(self.kernel_path)
+        if task == "deblurring":
+            if kernel_path != "ct_like":
+                if exists(kernel_path):
+                    kernel = torch.load(kernel_path)
                 else:
-                    kernel = get_kernel(name=self.kernel_path)
-                kernel = kernel.unsqueeze(0).unsqueeze(0).to(self.device)
+                    kernel = get_kernel(name=kernel_path)
+                kernel = kernel.unsqueeze(0).unsqueeze(0).to(device)
                 self.physics = Blur(
-                    filter=kernel, padding="circular", device=self.device
+                    filter=kernel, padding="circular", device=device
                 )
             else:
                 self.physics = CTLikeFilter()
-        elif self.task == "sr":
+        elif task == "sr":
             self.physics = Downsampling(
-                ratio=self.sr_factor, antialias=True, true_adjoint=self.true_adjoint
+                ratio=sr_factor, antialias=True, true_adjoint=true_adjoint
             )
         else:
-            raise ValueError(f"Unknown task: {self.task}")
+            raise ValueError(f"Unknown task: {task}")
 
         # NOTE: These are meant to go.
-        setattr(self.physics, "task", self.task)
+        setattr(self, "task", task)
+        setattr(self.physics, "task", task)
         setattr(self.physics, "__manager", self)
 
-        self.physics.noise_model = GaussianNoise(sigma=self.noise_level / 255)
+        self.physics.noise_model = GaussianNoise(sigma=noise_level / 255)
 
     def get_physics(self):
         return self.physics
