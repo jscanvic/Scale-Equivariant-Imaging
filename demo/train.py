@@ -31,8 +31,9 @@ parser.add_argument(
 )
 parser.add_argument("--ProposedLoss__sure_alternative", type=str, default=None)
 parser.add_argument("--ProposedLoss__alpha_tradeoff", type=float, default=1.0)
+parser.add_argument("--ScalingTransform__kind", type=str, default="padded")
 parser.add_argument(
-    "--ProposedLoss__scale_antialias", action=BooleanOptionalAction, default=False
+    "--ScalingTransform__antialias", action=BooleanOptionalAction, default=False
 )
 parser.add_argument("--out_dir", type=str)
 parser.add_argument("--batch_size", type=int, default=8)
@@ -90,14 +91,6 @@ loss = get_loss(args=args, sure_margin=sure_margin)
 
 dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
-# NOTE: It'd be better if the learning rate was the same for all tasks.
-lr = 2e-4 if args.task == "sr" else 5e-4
-optimizer = Adam(model.parameters(), lr=lr, betas=(0.9, args.optimizer_beta2))
-scheduler = get_lr_scheduler(
-    optimizer=optimizer, epochs=epochs, lr_scheduler_kind=args.lr_scheduler_kind
-)
-
-
 # NOTE: It'd be better to use approximately the same number of epochs in all
 # experiments.
 if args.epochs is None:
@@ -106,6 +99,13 @@ if args.epochs is None:
         epochs = 4000
 else:
     epochs = args.epochs
+
+# NOTE: It'd be better if the learning rate was the same for all tasks.
+lr = 2e-4 if args.task == "sr" else 5e-4
+optimizer = Adam(model.parameters(), lr=lr, betas=(0.9, args.optimizer_beta2))
+scheduler = get_lr_scheduler(
+    optimizer=optimizer, epochs=epochs, lr_scheduler_kind=args.lr_scheduler_kind
+)
 
 # training loop
 training_loss_metric = MeanMetric()

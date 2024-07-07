@@ -80,7 +80,7 @@ if args.save_psf:
 
 # testing loop
 if args.indices is None:
-    num_indices = max(len(dataset), 100)
+    num_indices = len(dataset)
     indices = range(num_indices)
 else:
     indices = (int(i) for i in args.indices.split(","))

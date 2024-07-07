@@ -52,8 +52,8 @@ class SURELoss(Module):
 class ProposedLoss(Module):
     def __init__(
         self,
+        blueprint,
         sure_alternative,
-        scale_antialias,
         noise_level,
         stop_gradient,
         sure_cropped_div,
@@ -65,9 +65,7 @@ class ProposedLoss(Module):
         super().__init__()
 
         if transforms == "Scaling_Transforms":
-            ei_transform = ScalingTransform(
-                kind="padded", antialias=scale_antialias
-            )
+            ei_transform = ScalingTransform(**blueprint[ScalingTransform.__name__])
         elif transforms == "Rotations":
             ei_transform = Rotate()
         elif transforms == "Shifts":
@@ -138,6 +136,7 @@ class Loss(Module):
             )
         elif method == "proposed":
             self.loss = ProposedLoss(
+                blueprint=blueprint,
                 noise_level=noise_level,
                 sure_cropped_div=sure_cropped_div,
                 sure_averaged_cst=sure_averaged_cst,
@@ -157,9 +156,13 @@ def get_loss(args, sure_margin):
     blueprint[ProposedLoss.__name__] = {
         "stop_gradient": args.ProposedLoss__stop_gradient,
         "sure_alternative": args.ProposedLoss__sure_alternative,
-        "scale_antialias": args.ProposedLoss__scale_antialias,
         "alpha_tradeoff": args.ProposedLoss__alpha_tradeoff,
         "transforms": args.ProposedLoss__transforms,
+    }
+
+    blueprint[ScalingTransform.__name__] = {
+        "kind": args.ScalingTransform__kind,
+        "antialias": args.ScalingTransform__antialias,
     }
 
     method = args.method

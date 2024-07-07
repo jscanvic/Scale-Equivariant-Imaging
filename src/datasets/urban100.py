@@ -9,14 +9,17 @@ class Urban100(Dataset):
         super().__init__()
         self.datasets_dir = datasets_dir
 
-        assert split in ["train", "val"]
-        self.split = split
-        if self.split == "train":
+        if split == "train":
             self.split_offset = 1
             self.split_size = 90
-        elif self.split == "val":
+        elif split == "val":
             self.split_offset = 91
             self.split_size = 10
+        elif split == "all":
+            self.split_offset = 1
+            self.split_size = 100
+        else:
+            raise ValueError(f"Invalid split {split}")
 
         if download:
             self.download(datasets_dir)

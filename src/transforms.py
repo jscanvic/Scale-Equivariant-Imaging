@@ -11,10 +11,8 @@ def sample_from(values, shape=(1,), dtype=torch.float32, device="cpu"):
     return values[indices]
 
 
-def sample_downsampling_parameters(image_count, device, dtype):
-    downsampling_rate = sample_from(
-        [0.75, 0.5], shape=(image_count,), dtype=dtype, device=device
-    )
+def sample_downsampling_parameters(image_count, device, dtype, rates):
+    downsampling_rate = sample_from(rates, shape=(image_count,), dtype=dtype, device=device)
 
     # The coordinates are in [-1, 1].
     center = torch.rand((image_count, 2), dtype=dtype, device=device)
@@ -84,15 +82,17 @@ def padded_downsampling_transform(
 
 
 class PaddedDownsamplingTransform(Module):
-    def __init__(self, antialias=False):
+    def __init__(self, antialias, downsampling_rates):
         super().__init__()
         self.antialias = antialias
+        self.downsampling_rates = downsampling_rates
 
     def forward(self, x):
         downsampling_rate, center = sample_downsampling_parameters(
             image_count=x.shape[0],
             device=x.device,
             dtype=x.dtype,
+            rates=self.downsampling_rates,
         )
 
         x = padded_downsampling_transform(
@@ -112,7 +112,7 @@ def normal_downsampling_transform(x, downsampling_rate, mode, antialiased):
     for i in range(x.shape[0]):
         z = F.interpolate(
             x[i : i + 1, :, :, :],
-            scale_factor=downsampling_rate[i].item(),
+            scale_factor=downsampling_rate,
             mode=mode,
             antialias=antialiased,
         )
@@ -122,16 +122,17 @@ def normal_downsampling_transform(x, downsampling_rate, mode, antialiased):
 
 
 class NormalDownsamplingTransform(Module):
-    def __init__(self, antialias=False):
+    def __init__(self, antialias, downsampling_rates):
         super().__init__()
         self.antialias = antialias
+        self.downsampling_rates = downsampling_rates
 
     def forward(self, x):
-        downsampling_rate, _ = sample_downsampling_parameters(
-            image_count=x.shape[0],
-            device=x.device,
-            dtype=x.dtype,
-        )
+        downsampling_rate = sample_from(self.downsampling_rates,
+                                        shape=(),
+                                        dtype=x.dtype,
+                                        device=x.device)
+        downsampling_rate = downsampling_rate.item()
 
         x = normal_downsampling_transform(
             x,
@@ -146,10 +147,17 @@ class NormalDownsamplingTransform(Module):
 class ScalingTransform(Module):
     def __init__(self, kind, antialias):
         super().__init__()
+        downsampling_rates = [0.75, 0.5]
         if kind == "padded":
-            self.transform = PaddedDownsamplingTransform(antialias=antialias)
+            self.transform = PaddedDownsamplingTransform(
+                    antialias=antialias,
+                    downsampling_rates=downsampling_rates,
+                )
         elif kind == "normal":
-            self.transform = NormalDownsamplingTransform(antialias=antialias)
+            self.transform = NormalDownsamplingTransform(
+                    antialias=antialias,
+                    downsampling_rates=downsampling_rates,
+                )
         else:
             raise ValueError(f"Unknown kind: {kind}")
 
