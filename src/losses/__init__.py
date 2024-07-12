@@ -185,7 +185,28 @@ class Loss(Module):
         return self.loss(x=x, y=y, model=model)
 
 
-def get_loss(args, physics, sure_margin):
+def get_loss(args, physics):
+    # NOTE: This is a bit of a mess.
+    if args.partial_sure:
+        if args.sure_margin is not None:
+            sure_margin = args.sure_margin
+        elif args.task == "deblurring":
+            assert physics.task == "deblurring"
+
+            kernel = physics.filter
+            kernel_size = max(kernel.shape[-2], kernel.shape[-1])
+
+            sure_margin = (kernel_size - 1) // 2
+        elif args.task == "sr":
+            if args.partial_sure_sr:
+                assert args.sr_filter == "bicubic_torch"
+                sure_margin = 2
+            else:
+                sure_margin = 0
+    else:
+        assert args.sure_margin is None
+        sure_margin = 0
+
     blueprint = {}
 
     blueprint[Loss.__name__] = {
@@ -209,7 +230,6 @@ def get_loss(args, physics, sure_margin):
     noise_level = args.noise_level
     sure_cropped_div = args.sure_cropped_div
     sure_averaged_cst = args.sure_averaged_cst
-    sure_margin = sure_margin
 
     loss = Loss(
         physics=physics,

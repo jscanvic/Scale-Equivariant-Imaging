@@ -69,28 +69,7 @@ model = get_model(
 model.to(args.device)
 model.train()
 
-# NOTE: This should be in the loss itself.
-if args.partial_sure:
-    if args.sure_margin is not None:
-        sure_margin = args.sure_margin
-    elif args.task == "deblurring":
-        assert physics.task == "deblurring"
-
-        kernel = physics.filter
-        kernel_size = max(kernel.shape[-2], kernel.shape[-1])
-
-        sure_margin = (kernel_size - 1) // 2
-    elif args.task == "sr":
-        if args.partial_sure_sr:
-            assert args.sr_filter == "bicubic_torch"
-            sure_margin = 2
-        else:
-            sure_margin = 0
-else:
-    assert args.sure_margin is None
-    sure_margin = 0
-
-loss = get_loss(args=args, physics=physics, sure_margin=sure_margin)
+loss = get_loss(args=args, physics=physics)
 
 dataset = get_dataset(args=args, purpose="train", physics=physics, device=args.device)
 
