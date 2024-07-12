@@ -13,8 +13,9 @@ class SupervisedLoss(Module):
         super().__init__()
         self.loss = SupLoss(metric=mse())
 
-    def forward(self, **kwargs):
-        return self.loss(**kwargs)
+    def forward(self, x, y, physics, model):
+        x_net = model(y)
+        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
 
 
 class CSSLoss(Module):
@@ -22,8 +23,9 @@ class CSSLoss(Module):
         super().__init__()
         self.loss = SupLoss(metric=mse())
 
-    def forward(self, **kwargs):
-        return self.loss(**kwargs)
+    def forward(self, x, y, physics, model):
+        x_net = model(y)
+        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
 
 
 class Noise2InverseLoss(Module):
@@ -31,8 +33,9 @@ class Noise2InverseLoss(Module):
         super().__init__()
         self.loss = SupLoss(metric=mse())
 
-    def forward(self, **kwargs):
-        return self.loss(**kwargs)
+    def forward(self, x, y, physics, model):
+        x_net = model(y)
+        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
 
 
 class SURELoss(Module):
@@ -45,8 +48,9 @@ class SURELoss(Module):
             margin=margin,
         )
 
-    def forward(self, **kwargs):
-        return self.loss(**kwargs)
+    def forward(self, x, y, physics, model):
+        x_net = model(y)
+        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
 
 
 class ProposedLoss(Module):
@@ -102,10 +106,21 @@ class ProposedLoss(Module):
             loss_fns.append(equivariant_loss)
         self.loss_fns = loss_fns
 
-    def forward(self, **kwargs):
+        # NOTE: This could be done better.
+        if sure_alternative == "r2r":
+            self.compute_x_net = False
+        else:
+            self.compute_x_net = True
+
+    def forward(self, x, y, physics, model):
+        if self.compute_x_net:
+            x_net = model(y)
+        else:
+            x_net = None
+
         loss = 0
         for loss_fn in self.loss_fns:
-            loss += loss_fn(**kwargs)
+            loss += loss_fn(x=x, x_net=x_net, y=y, physics=physics, model=model)
         return loss
 
 
@@ -146,19 +161,8 @@ class Loss(Module):
         else:
             raise ValueError(f"Unknwon method: {method}")
 
-        # NOTE: This should probably be done in the ProposedLoss class
-        if method == "proposed" and blueprint[ProposedLoss.__name__]["sure_alternative"] == "r2r":
-            self.compute_x_net = False
-        else:
-            self.compute_x_net = True
-
     def forward(self, x, y, physics, model):
-        if self.compute_x_net:
-            x_net = model(y)
-        else:
-            x_net = None
-
-        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
+        return self.loss(x=x, y=y, physics=physics, model=model)
 
 
 def get_loss(args, sure_margin):
