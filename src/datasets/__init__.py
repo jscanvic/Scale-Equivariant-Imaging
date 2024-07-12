@@ -244,7 +244,6 @@ class Dataset(BaseDataset):
         css,
         noise2inverse,
         device,
-        memoize_gt,
     ):
         super().__init__()
         self.purpose = purpose
@@ -254,7 +253,6 @@ class Dataset(BaseDataset):
         ground_truth_dataset = GroundTruthDataset(
             blueprint=blueprint,
             device=device,
-            memoize_gt=memoize_gt,
             **blueprint[GroundTruthDataset.__name__],
         )
 
@@ -298,11 +296,9 @@ def get_dataset(args, purpose, physics, device):
     if purpose == "test":
         noise2inverse = args.noise2inverse
         css = False
-        memoize_gt = False
     elif purpose == "train":
         noise2inverse = args.method == "noise2inverse"
         css = args.method == "css"
-        memoize_gt = args.memoize_gt
     else:
         raise ValueError(f"Unknown purpose: {purpose}")
 
@@ -317,6 +313,7 @@ def get_dataset(args, purpose, physics, device):
         "download": args.GroundTruthDataset__download,
         "size": args.GroundTruthDataset__size,
         "split": args.GroundTruthDataset__split,
+        "memoize_gt": args.memoize_gt,
     }
 
     blueprint[PrepareTrainingPairs.__name__] = {
@@ -341,5 +338,4 @@ def get_dataset(args, purpose, physics, device):
         purpose=purpose,
         css=css,
         noise2inverse=noise2inverse,
-        memoize_gt=memoize_gt,
     )

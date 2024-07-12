@@ -35,6 +35,7 @@ parser.add_argument("--tv_lambd", type=float, default=None)
 parser.add_argument("--tv_max_iter", type=int, default=300)
 parser.add_argument("--GroundTruthDataset__split", type=str, default="val")
 parser.add_argument("--SyntheticDataset__deterministic_measurements", action=BooleanOptionalAction, default=True)
+parser.add_argument("--memoize_gt", action=BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
 physics = get_physics(args, device=args.device)
