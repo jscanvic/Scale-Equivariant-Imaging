@@ -123,6 +123,7 @@ class Dataset(BaseDataset):
         split,
         device,
         memoize_gt,
+        deterministic_measurements,
         unique_seeds,
     ):
         super().__init__()
@@ -130,14 +131,12 @@ class Dataset(BaseDataset):
 
         # NOTE: The two are meant to be combined.
         self.physics = physics
-        self.physics_manager = self.physics.__manager
+        self.physics_manager = getattr(self.physics, "__manager")
 
         self.css = css
         self.noise2inverse = noise2inverse
 
-        # NOTE: the measurements should always be deterministic except for
-        # supervised training. Although it can be dealt with in the loss as well.
-        self.deterministic_measurements = purpose == "test"
+        self.deterministic_measurements = deterministic_measurements
         self.unique_seeds = unique_seeds
 
         self.ground_truth_dataset = GroundTruthDataset(
@@ -258,6 +257,7 @@ def get_dataset(args, purpose, physics, device):
 
     blueprint[Dataset.__name__] = {
         "unique_seeds": args.Dataset__unique_seeds,
+        "deterministic_measurements": args.Dataset__deterministic_measurements,
     }
 
     return Dataset(

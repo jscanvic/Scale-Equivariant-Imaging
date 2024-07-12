@@ -94,6 +94,7 @@ def get_physics(args, device):
     }
 
     physics_manager = PhysicsManager(
+        blueprint=blueprint,
         device=device,
         **blueprint[PhysicsManager.__name__],
     )

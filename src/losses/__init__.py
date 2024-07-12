@@ -146,8 +146,19 @@ class Loss(Module):
         else:
             raise ValueError(f"Unknwon method: {method}")
 
-    def forward(self, **kwargs):
-        return self.loss(**kwargs)
+        # NOTE: This should probably be done in the ProposedLoss class
+        if method == "proposed" and blueprint[ProposedLoss.__name__]["sure_alternative"] == "r2r":
+            self.compute_x_net = False
+        else:
+            self.compute_x_net = True
+
+    def forward(self, x, y, physics, model):
+        if self.compute_x_net:
+            x_net = model(y)
+        else:
+            x_net = None
+
+        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
 
 
 def get_loss(args, sure_margin):

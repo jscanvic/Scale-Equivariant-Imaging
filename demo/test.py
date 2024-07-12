@@ -4,6 +4,7 @@ import bm3d
 
 import os
 from math import isnan
+from argparse import BooleanOptionalAction
 
 import torch
 import numpy as np
@@ -33,6 +34,7 @@ parser.add_argument("--r2r", action="store_true")
 parser.add_argument("--r2r_itercount", type=int, default=1)
 parser.add_argument("--tv_lambd", type=float, default=None)
 parser.add_argument("--tv_max_iter", type=int, default=300)
+parser.add_argument("--Dataset__deterministic_measurements", action=BooleanOptionalAction, default=True)
 args = parser.parse_args()
 
 physics = get_physics(args, device=args.device)

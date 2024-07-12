@@ -49,6 +49,9 @@ parser.add_argument("--sure_margin", type=int, default=None)
 parser.add_argument("--lr_scheduler_kind", type=str, default="multi_step_decay")
 # NOTE: It'd be better to default to .999
 parser.add_argument("--optimizer_beta2", type=float, default=0.99)
+# NOTE: the measurements should always be deterministic except for
+# supervised training. Although it can be dealt with in the loss as well.
+parser.add_argument("--Dataset__deterministic_measurements", action=BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
 # NOTE: This should ideally take less arguments and let the function extract
@@ -123,15 +126,9 @@ for epoch in range(epochs):
 
         optimizer.zero_grad()
 
-        # NOTE: This should ideally be in the model or in the loss.
-        if args.method == "proposed" and args.ProposedLoss__sure_alternative == "r2r":
-            x_hat = None
-        else:
-            x_hat = model(y)
-
-        # NOTE: It might be better to avoid calling the model outside the loss
-        # function.
-        training_loss = loss(x=x, x_net=x_hat, y=y, physics=physics, model=model)
+        # NOTE: It might be better to pass the variable physics to the
+        # constructor of the loss instead of passing it to the forward method.
+        training_loss = loss(x=x, y=y, physics=physics, model=model)
 
         training_loss.backward()
         optimizer.step()
