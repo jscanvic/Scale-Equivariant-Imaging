@@ -9,38 +9,42 @@ from .sure import SureGaussianLoss
 
 
 class SupervisedLoss(Module):
-    def __init__(self):
+    def __init__(self, physics):
         super().__init__()
+        self.physics = physics
         self.loss = SupLoss(metric=mse())
 
-    def forward(self, x, y, physics, model):
+    def forward(self, x, y, model):
         x_net = model(y)
-        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
+        return self.loss(x=x, x_net=x_net, y=y, physics=self.physics, model=model)
 
 
 class CSSLoss(Module):
-    def __init__(self):
+    def __init__(self, physics):
         super().__init__()
+        self.physics = physics
         self.loss = SupLoss(metric=mse())
 
-    def forward(self, x, y, physics, model):
+    def forward(self, x, y, model):
         x_net = model(y)
-        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
+        return self.loss(x=x, x_net=x_net, y=y, physics=self.physics, model=model)
 
 
 class Noise2InverseLoss(Module):
-    def __init__(self):
+    def __init__(self, physics):
         super().__init__()
+        self.physics = physics
         self.loss = SupLoss(metric=mse())
 
-    def forward(self, x, y, physics, model):
+    def forward(self, x, y, model):
         x_net = model(y)
-        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
+        return self.loss(x=x, x_net=x_net, y=y, physics=self.physics, model=model)
 
 
 class SURELoss(Module):
-    def __init__(self, noise_level, cropped_div, averaged_cst, margin):
+    def __init__(self, noise_level, cropped_div, averaged_cst, margin, physics):
         super().__init__()
+        self.physics = physics
         self.loss = SureGaussianLoss(
             sigma=noise_level / 255,
             cropped_div=cropped_div,
@@ -48,9 +52,9 @@ class SURELoss(Module):
             margin=margin,
         )
 
-    def forward(self, x, y, physics, model):
+    def forward(self, x, y, model):
         x_net = model(y)
-        return self.loss(x=x, x_net=x_net, y=y, physics=physics, model=model)
+        return self.loss(x=x, x_net=x_net, y=y, physics=self.physics, model=model)
 
 
 class ProposedLoss(Module):
@@ -65,8 +69,10 @@ class ProposedLoss(Module):
         sure_margin,
         alpha_tradeoff,
         transforms,
+        physics,
     ):
         super().__init__()
+        self.physics = physics
 
         if transforms == "Scaling_Transforms":
             ei_transform = ScalingTransform(**blueprint[ScalingTransform.__name__])
@@ -112,7 +118,7 @@ class ProposedLoss(Module):
         else:
             self.compute_x_net = True
 
-    def forward(self, x, y, physics, model):
+    def forward(self, x, y, model):
         if self.compute_x_net:
             x_net = model(y)
         else:
@@ -120,30 +126,31 @@ class ProposedLoss(Module):
 
         loss = 0
         for loss_fn in self.loss_fns:
-            loss += loss_fn(x=x, x_net=x_net, y=y, physics=physics, model=model)
+            loss += loss_fn(x=x, x_net=x_net, y=y, physics=self.physics, model=model)
         return loss
 
 
 class Loss(Module):
     def __init__(
         self,
+        physics,
         blueprint,
         noise_level,
         sure_cropped_div,
         sure_averaged_cst,
         sure_margin,
-        method,
-    ):
+        method,):
         super().__init__()
 
         if method == "supervised":
-            self.loss = SupervisedLoss()
+            self.loss = SupervisedLoss(physics=physics)
         elif method == "css":
-            self.loss = CSSLoss()
+            self.loss = CSSLoss(physics=physics)
         elif method == "noise2inverse":
-            self.loss = Noise2InverseLoss()
+            self.loss = Noise2InverseLoss(physics=physics)
         elif method == "sure":
             self.loss = SURELoss(
+                physics=physics,
                 noise_level=noise_level,
                 cropped_div=sure_cropped_div,
                 averaged_cst=sure_averaged_cst,
@@ -151,6 +158,7 @@ class Loss(Module):
             )
         elif method == "proposed":
             self.loss = ProposedLoss(
+                physics=physics,
                 blueprint=blueprint,
                 noise_level=noise_level,
                 sure_cropped_div=sure_cropped_div,
@@ -161,11 +169,11 @@ class Loss(Module):
         else:
             raise ValueError(f"Unknwon method: {method}")
 
-    def forward(self, x, y, physics, model):
-        return self.loss(x=x, y=y, physics=physics, model=model)
+    def forward(self, x, y, model):
+        return self.loss(x=x, y=y, model=model)
 
 
-def get_loss(args, sure_margin):
+def get_loss(args, physics, sure_margin):
     blueprint = {}
 
     blueprint[ProposedLoss.__name__] = {
@@ -187,6 +195,7 @@ def get_loss(args, sure_margin):
     sure_margin = sure_margin
 
     loss = Loss(
+        physics=physics,
         blueprint=blueprint,
         method=method,
         noise_level=noise_level,

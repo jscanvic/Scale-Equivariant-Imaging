@@ -90,7 +90,9 @@ else:
     assert args.sure_margin is None
     sure_margin = 0
 
-loss = get_loss(args=args, sure_margin=sure_margin)
+loss = get_loss(args=args,
+                physics=physics,
+                sure_margin=sure_margin)
 
 dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
@@ -126,9 +128,7 @@ for epoch in range(epochs):
 
         optimizer.zero_grad()
 
-        # NOTE: It might be better to pass the variable physics to the
-        # constructor of the loss instead of passing it to the forward method.
-        training_loss = loss(x=x, y=y, physics=physics, model=model)
+        training_loss = loss(x=x, y=y, model=model)
 
         training_loss.backward()
         optimizer.step()
