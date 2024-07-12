@@ -148,50 +148,22 @@ class PrepareTrainingPairs(Module):
         return T_crop(x, y, xy_size_ratio=xy_size_ratio)
 
 
-
-class Dataset(BaseDataset):
-    def __init__(
-        self,
-        blueprint,
-        purpose,
-        physics,
-        css,
-        noise2inverse,
-        device,
-        memoize_gt,
-        deterministic_measurements,
-        unique_seeds,
-    ):
+class TrainingDataset(BaseDataset):
+    def __init__(self,
+                 synthetic_dataset
+                 physics_manager,
+                 physics,
+                 css,
+                 noise2inverse,
+                 prepare_training_pairs,
+             ):
         super().__init__()
-        self.purpose = purpose
-
-        # NOTE: The two are meant to be combined.
+        self.synthetic_dataset = synthetic_dataset
+        self.physics_manager = physics_manager
         self.physics = physics
-        self.physics_manager = getattr(self.physics, "__manager")
-
         self.css = css
         self.noise2inverse = noise2inverse
-
-        ground_truth_dataset = GroundTruthDataset(
-            blueprint=blueprint,
-            device=device,
-            memoize_gt=memoize_gt,
-            **blueprint[GroundTruthDataset.__name__],
-        )
-
-        self.synthetic_dataset = SyntheticDataset(
-            group_truth_dataset=ground_truth_dataset,
-            physics_manager=self.physics_manager,
-            **blueprint[SyntheticDataset.__name__]
-        )
-
-        self.prepare_training_pairs = PrepareTrainingPairs(
-            physics=self.physics,
-            **blueprint[PrepareTrainingPairs.__name__],
-        )
-
-    def __len__(self):
-        return len(self.synthetic_dataset)
+        self.prepare_training_pairs = prepare_training_pairs
 
     def __getitem__(self, index):
         x, y = self.synthetic_dataset[index]
@@ -205,45 +177,123 @@ class Dataset(BaseDataset):
             y = y.squeeze(0)
             x, y = y, z
 
-        if self.purpose == "train":
-            # NOTE: This should ideally be done in the model.
+        # NOTE: It's unclear why this is done only for the training set.
+        # NOTE: This should ideally be done in the model.
+        if self.noise2inverse:
             degradation_inverse_fn = self.physics.A_dagger
-            if self.noise2inverse:
-                physics_filter = getattr(self.physics, "filter", None)
-                T_n2i = Noise2InverseTransform(
-                    task=self.physics.task,
-                    physics_filter=physics_filter,
-                    degradation_inverse_fn=degradation_inverse_fn,
-                )
-                x, y = T_n2i(x.unsqueeze(0), y.unsqueeze(0))
-                x = x.squeeze(0)
-                y = y.squeeze(0)
+            physics_filter = getattr(self.physics, "filter", None)
+            T_n2i = Noise2InverseTransform(
+                task=self.physics.task,
+                physics_filter=physics_filter,
+                degradation_inverse_fn=degradation_inverse_fn,
+            )
+            x, y = T_n2i(x.unsqueeze(0), y.unsqueeze(0))
+            x = x.squeeze(0)
+            y = y.squeeze(0)
 
-            # NOTE: This should ideally either be done in the model, or not at
-            # all.
-            x, y = self.prepare_training_pairs(x, y)
+        # NOTE: This should ideally either be done in the model, or not at
+        # all.
+        x, y = self.prepare_training_pairs(x, y)
+
+    def __len__(self):
+        return len(self.synthetic_dataset)
+
+
+class TestDataset(BaseDataset):
+    def __init__(self,
+                 synthetic_dataset,
+                 noise2inverse,
+                 physics,
+             ):
+        super().__init__()
+        self.synthetic_dataset = synthetic_dataset
+        self.noise2inverse = noise2inverse
+        self.physics = physics
+
+    def __getitem__(self, index):
+        x, y = self.synthetic_dataset[index]
+
+        # NOTE: This should ideally be removed.
+        if self.noise2inverse:
+            # bug fix: make y have even height and width
+            if self.physics.task == "deblurring":
+                w = 2 * (y.shape[1] // 2)
+                h = 2 * (y.shape[2] // 2)
+                y = y[:, :w, :h]
+
+        # NOTE: This should ideally be removed.
+        # crop x to make its dimensions be a multiple of u's dimensions
+        if x.shape != y.shape:
+            h, w = y.shape[1], y.shape[2]
+            if self.physics.task == "sr":
+                f = self.physics.ratio
+            else:
+                f = 1
+            x = TF.crop(x, top=0, left=0, height=h * f, width=w * f)
+
+    def __len__(self):
+        return len(self.synthetic_dataset)
+
+
+class Dataset(BaseDataset):
+    def __init__(
+        self,
+        blueprint,
+        purpose,
+        physics,
+        css,
+        noise2inverse,
+        device,
+        memoize_gt,
+    ):
+        super().__init__()
+        self.purpose = purpose
+
+        # NOTE: The two are meant to be combined.
+        self.physics = physics
+        self.physics_manager = getattr(self.physics, "__manager")
+
+        ground_truth_dataset = GroundTruthDataset(
+            blueprint=blueprint,
+            device=device,
+            memoize_gt=memoize_gt,
+            **blueprint[GroundTruthDataset.__name__],
+        )
+
+        synthetic_dataset = SyntheticDataset(
+            group_truth_dataset=ground_truth_dataset,
+            physics_manager=self.physics_manager,
+            **blueprint[SyntheticDataset.__name__]
+        )
+
+        if self.purpose == "train":
+            prepare_training_pairs = PrepareTrainingPairs(
+                physics=self.physics,
+                **blueprint[PrepareTrainingPairs.__name__],
+            )
+
+            self.dataset = TrainingDataset(
+                synthetic_dataset=synthetic_dataset,
+                physics_manager=self.physics_manager,
+                physics=self.physics,
+                css=css,
+                noise2inverse=noise2inverse,
+                prepare_training_pairs=prepare_training_pairs,
+            )
         elif self.purpose == "test":
-            # NOTE: This should ideally be removed.
-            if self.noise2inverse:
-                # bug fix: make y have even height and width
-                if self.physics.task == "deblurring":
-                    w = 2 * (y.shape[1] // 2)
-                    h = 2 * (y.shape[2] // 2)
-                    y = y[:, :w, :h]
-
-            # NOTE: This should ideally be removed.
-            # crop x to make its dimensions be a multiple of u's dimensions
-            if x.shape != y.shape:
-                h, w = y.shape[1], y.shape[2]
-                if self.physics.task == "sr":
-                    f = self.physics.ratio
-                else:
-                    f = 1
-                x = TF.crop(x, top=0, left=0, height=h * f, width=w * f)
+            self.dataset = TestDataset(
+                synthetic_dataset=synthetic_dataset,
+                noise2inverse=noise2inverse,
+                physics=self.physics,
+            )
         else:
             raise ValueError(f"Unknown purpose: {self.purpose}")
 
-        return x, y
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, index):
+        return self.dataset[index]
 
 
 def get_dataset(args, purpose, physics, device):
