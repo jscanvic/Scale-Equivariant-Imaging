@@ -10,16 +10,12 @@ from .sure import SureGaussianLoss
 
 
 class SupervisedLoss(Module):
-    def __init__(self, physics, augment_measurements):
+    def __init__(self, physics):
         super().__init__()
         self.physics = physics
-        self.physics_manager = getattr(self.physics, "__manager")
         self.loss = SupLoss(metric=mse())
-        self.augment_measurements = augment_measurements
 
     def forward(self, x, y, model):
-        if self.augment_measurements:
-            y = self.physics_manager.randomly_degrade(x, seed=None)
         x_net = model(y)
         return self.loss(x=x, x_net=x_net, y=y, physics=self.physics, model=model)
 
@@ -151,10 +147,7 @@ class Loss(Module):
         super().__init__()
 
         if method == "supervised":
-            self.loss = SupervisedLoss(
-                physics=physics,
-                **blueprint[SupervisedLoss.__name__],
-            )
+            self.loss = SupervisedLoss(physics=physics)
         elif method == "css":
             self.loss = CSSLoss(physics=physics)
         elif method == "noise2inverse":
@@ -210,10 +203,6 @@ def get_loss(args, physics, sure_margin):
     blueprint[ScalingTransform.__name__] = {
         "kind": args.ScalingTransform__kind,
         "antialias": args.ScalingTransform__antialias,
-    }
-
-    blueprint[SupervisedLoss.__name__] = {
-        "augment_measurements": args.SupervisedLoss__augment_measurements,
     }
 
     method = args.method

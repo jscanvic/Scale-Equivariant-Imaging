@@ -39,12 +39,6 @@ parser.add_argument("--ScalingTransform__kind", type=str, default="padded")
 parser.add_argument(
     "--ScalingTransform__antialias", action=BooleanOptionalAction, default=False
 )
-# NOTE: This should be set to true!
-parser.add_argument(
-    "--SupervisedLoss__augment_measurements",
-    action=BooleanOptionalAction,
-    default=False,
-)
 parser.add_argument("--out_dir", type=str)
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--epochs", type=int, default=None)
@@ -55,15 +49,12 @@ parser.add_argument("--sure_cropped_div", action=BooleanOptionalAction, default=
 parser.add_argument("--sure_averaged_cst", action=BooleanOptionalAction, default=None)
 parser.add_argument("--partial_sure_sr", action=BooleanOptionalAction, default=False)
 parser.add_argument("--sure_margin", type=int, default=None)
-# NOTE: It'd be better to default to "delayed_linear_decay"
-parser.add_argument("--lr_scheduler_kind", type=str, default="multi_step_decay")
-# NOTE: It'd be better to default to .999
-parser.add_argument("--optimizer_beta2", type=float, default=0.99)
-# NOTE: This should be set to true!
+parser.add_argument("--lr_scheduler_kind", type=str, default="delayed_linear_decay")
+parser.add_argument("--optimizer_beta2", type=float, default=0.999)
 parser.add_argument(
     "--SyntheticDataset__deterministic_measurements",
     action=BooleanOptionalAction,
-    default=False,
+    default=True,
 )
 parser.add_argument("--GroundTruthDataset__split", type=str, default="train")
 args = parser.parse_args()
