@@ -21,13 +21,11 @@ class GroundTruthDataset(BaseDataset):
         split,
         download,
         size,
-        device,
         memoize_gt,
     ):
         super().__init__()
         self.size = size
         # NOTE: Every tensor here should be stored in RAM, not on the GPU.
-        self.device = device
         self.memoize_gt = memoize_gt
 
         if dataset_name == "div2k":
@@ -62,6 +60,7 @@ class GroundTruthDataset(BaseDataset):
                 if key not in cache:
                     x = f(*args, **kwargs)
                     device = x.device
+                    # NOTE: This should be unnecessary.
                     x = x.to("cpu")
                     cache[key] = (device, x)
                 device, x = cache[key]
@@ -73,7 +72,6 @@ class GroundTruthDataset(BaseDataset):
     @memoize_load_image
     def __getitem__(self, index):
         x = self.dataset[index]
-        x = x.to(self.device)
         if self.size is not None:
             x = TF.resize(
                 x,
@@ -90,11 +88,13 @@ class GroundTruthDataset(BaseDataset):
 
 class SyntheticDataset(BaseDataset):
     def __init__(self,
+                 device,
                  ground_truth_dataset,
                  deterministic_measurements,
                  unique_seeds,
                  physics_manager):
         super().__init__()
+        self.device = device
         self.ground_truth_dataset = ground_truth_dataset
         self.deterministic_measurements = deterministic_measurements
         self.unique_seeds = unique_seeds
@@ -102,6 +102,7 @@ class SyntheticDataset(BaseDataset):
 
     def __getitem__(self, index):
         x = self.ground_truth_dataset[index]
+        x = x.to(self.device)
 
         if self.deterministic_measurements:
             if self.unique_seeds:
@@ -252,11 +253,11 @@ class Dataset(BaseDataset):
 
         ground_truth_dataset = GroundTruthDataset(
             blueprint=blueprint,
-            device=device,
             **blueprint[GroundTruthDataset.__name__],
         )
 
         synthetic_dataset = SyntheticDataset(
+            device=device,
             group_truth_dataset=ground_truth_dataset,
             physics_manager=physics_manager,
             **blueprint[SyntheticDataset.__name__]
