@@ -35,6 +35,8 @@ parser.add_argument("--ScalingTransform__kind", type=str, default="padded")
 parser.add_argument(
     "--ScalingTransform__antialias", action=BooleanOptionalAction, default=False
 )
+# NOTE: This should be set to true!
+parser.add_argument("--SupervisedLoss__augment_measurements", action=BooleanOptionalAction, default=False)
 parser.add_argument("--out_dir", type=str)
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--epochs", type=int, default=None)
