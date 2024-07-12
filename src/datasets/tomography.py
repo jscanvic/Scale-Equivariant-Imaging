@@ -23,6 +23,7 @@ class TomographyDataset(Dataset):
         x, _ = self._dataset[index]
         if self.channels == 3:
             x = x.repeat(3, 1, 1)
+        assert x.shape[0] == 3
         return x
 
     def __len__(self):

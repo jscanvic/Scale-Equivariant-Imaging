@@ -75,14 +75,19 @@ dataset = get_dataset(args=args, purpose="train", physics=physics, device=args.d
 
 dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
-# NOTE: It'd be better to use approximately the same number of epochs in all
-# experiments.
-if args.epochs is None:
-    epochs = 500 if args.dataset != "ct" else 100
-    if args.dataset == "urban100":
-        epochs = 4000
-else:
+# NOTE: It'd be better to have a more general formula depending on the length
+# of the dataset instead of hardcoding these values.
+if args.epochs is not None:
     epochs = args.epochs
+else:
+    if args.dataset == "div2k":
+        epochs = 500
+    elif args.dataset == "urban100":
+        epochs = 4000
+    elif args.dataset == "ct":
+        epochs = 100
+    else:
+        raise ValueError(f"Unknown dataset: {args.dataset}")
 
 # NOTE: It'd be better if the learning rate was the same for all tasks.
 lr = 2e-4 if args.task == "sr" else 5e-4
@@ -91,25 +96,30 @@ scheduler = get_lr_scheduler(
     optimizer=optimizer, epochs=epochs, lr_scheduler_kind=args.lr_scheduler_kind
 )
 
-# training loop
+# NOTE: This should be simpler.
+if args.checkpoint_interval is not None:
+    checkpoint_interval = args.checkpoint_interval
+else:
+    checkpoint_interval = 50
+    if args.dataset == "urban100":
+        checkpoint_interval = 400
+    elif args.dataset == "ct":
+        checkpoint_interval = 50
+
+# the entire training loop
 training_loss_metric = MeanMetric()
 for epoch in range(epochs):
     training_loss_metric.reset()
 
-    # stochastic gradient descent step
+    # a single epoch
     for x, y in dataloader:
         x, y = x.to(args.device), y.to(args.device)
-
-        # NOTE: It'd be great to remove this.
-        if args.dataset == "ct":
-            assert x.shape[1] == 3
-            assert y.shape[1] == 3
 
         optimizer.zero_grad()
 
         training_loss = loss(x=x, y=y, model=model)
-
         training_loss.backward()
+
         optimizer.step()
 
         training_loss_metric.update(training_loss.item())
@@ -124,16 +134,7 @@ for epoch in range(epochs):
         f"\t{current_timestamp}\t[{epoch + 1:{epochs_ndigits}d}/{epochs}]\tTraining_Loss: {epoch_training_loss:.2e}"
     )
 
-    # NOTE: This should be simpler.
     # save the training state regularly and after training completion
-    if args.checkpoint_interval is not None:
-        checkpoint_interval = args.checkpoint_interval
-    else:
-        checkpoint_interval = 50
-        if args.dataset == "urban100":
-            checkpoint_interval = 400
-        elif args.dataset == "ct":
-            checkpoint_interval = 50
     if (epoch % checkpoint_interval == 0) or (epoch == epochs - 1):
         checkpoint_path = f"{args.out_dir}/checkpoints/ckp_{epoch+1:03}.pt"
         save_training_state(epoch, model, optimizer, scheduler, checkpoint_path)
