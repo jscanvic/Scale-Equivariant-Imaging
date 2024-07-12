@@ -79,6 +79,8 @@ class TrainingDataset(BaseDataset):
         # all.
         x, y = self.prepare_training_pairs(x, y)
 
+        return x, y
+
     def __len__(self):
         return len(self.synthetic_dataset)
 
@@ -115,6 +117,8 @@ class TestDataset(BaseDataset):
             else:
                 f = 1
             x = TF.crop(x, top=0, left=0, height=h * f, width=w * f)
+
+        return x, y
 
     def __len__(self):
         return len(self.synthetic_dataset)
@@ -204,7 +208,7 @@ def get_dataset(args, purpose, physics, device):
 
     blueprint[SyntheticDataset.__name__] = {
         "unique_seeds": args.SyntheticDataset__unique_seeds,
-        "deterministic_measurements": args.Dataset__deterministic_measure,
+        "deterministic_measurements": args.SyntheticDataset__deterministic_measurements,
     }
 
     return Dataset(
