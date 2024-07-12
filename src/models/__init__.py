@@ -20,6 +20,15 @@ class Identity(Module):
         return y
 
 
+class InverseFilter(Module):
+    def __init__(self, physics):
+        super().__init__()
+        self.physics = physics
+
+    def forward(self, y):
+        return self.physics.A_dagger(y)
+
+
 class ProposedModel(Module):
     def __init__(
         self,
@@ -114,6 +123,8 @@ class Model(Module):
             self.model = TV(physics=physics, **blueprint[TV.__name__])
         elif kind == "id":
             self.model = Identity()
+        elif kind == "inv":
+            self.model = InverseFilter(physics=physics)
         elif kind == "up":
             self.model = Upsample(factor=sr_factor)
         else:

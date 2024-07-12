@@ -214,7 +214,6 @@ class BlurV2(LinearPhysics):
             )
         otf = torch.fft.rfft2(psf, dim=(-2, -1), norm=self.fft_norm)
 
-
         y = torch.fft.rfft2(y, dim=(-2, -1), norm=self.fft_norm)
         y = otf.broadcast_to(y.shape) * y
         y = torch.fft.irfft2(y, dim=(-2, -1), s=shape, norm=self.fft_norm)
