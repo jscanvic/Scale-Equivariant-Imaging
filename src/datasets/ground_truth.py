@@ -1,4 +1,4 @@
-from torch.utils.data import Dataset as BaseDataset
+from torch.utils.data import Dataset
 from torchvision.transforms import InterpolationMode, functional as TF
 from functools import wraps
 
@@ -8,7 +8,7 @@ from .urban100 import Urban100
 from .single_image import SingleImageDataset
 
 
-class GroundTruthDataset(BaseDataset):
+class GroundTruthDataset(Dataset):
     def __init__(
         self,
         blueprint,

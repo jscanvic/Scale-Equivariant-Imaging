@@ -1,9 +1,9 @@
-from torch.utils.data import Dataset as BaseDataset
+from torch.utils.data import Dataset
 
 from .ground_truth import GroundTruthDataset
 
 
-class SyntheticDataset(BaseDataset):
+class SyntheticDataset(Dataset):
     def __init__(
         self,
         blueprint,
