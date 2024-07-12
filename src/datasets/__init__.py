@@ -88,17 +88,22 @@ class GroundTruthDataset(BaseDataset):
 
 class SyntheticDataset(BaseDataset):
     def __init__(self,
+                 blueprint,
                  device,
-                 ground_truth_dataset,
                  deterministic_measurements,
                  unique_seeds,
-                 physics_manager):
+                 physics,
+             ):
         super().__init__()
         self.device = device
-        self.ground_truth_dataset = ground_truth_dataset
         self.deterministic_measurements = deterministic_measurements
         self.unique_seeds = unique_seeds
-        self.physics_manager = physics_manager
+        self.physics_manager = getattr(physics, "__manager")
+
+        self.ground_truth_dataset = GroundTruthDataset(
+            blueprint=blueprint,
+            **blueprint[GroundTruthDataset.__name__],
+        )
 
     def __getitem__(self, index):
         x = self.ground_truth_dataset[index]
@@ -152,7 +157,6 @@ class PrepareTrainingPairs(Module):
 class TrainingDataset(BaseDataset):
     def __init__(self,
                  synthetic_dataset
-                 physics_manager,
                  physics,
                  css,
                  noise2inverse,
@@ -160,7 +164,6 @@ class TrainingDataset(BaseDataset):
              ):
         super().__init__()
         self.synthetic_dataset = synthetic_dataset
-        self.physics_manager = physics_manager
         self.physics = physics
         self.css = css
         self.noise2inverse = noise2inverse
@@ -172,8 +175,9 @@ class TrainingDataset(BaseDataset):
         # NOTE: This should ideally be done in the class CSSLoss instead but
         # the border effects in the current implementation make it challenging.
         if self.css:
+            physics_manager = getattr(self.physics, "__manager")
             y = y.unsqueeze(0)
-            z = self.physics_manager.randomly_degrade(y, seed=None)
+            z = physics_manager.randomly_degrade(y, seed=None)
             z = z.squeeze(0)
             y = y.squeeze(0)
             x, y = y, z
@@ -247,23 +251,15 @@ class Dataset(BaseDataset):
         device,
     ):
         super().__init__()
-        self.purpose = purpose
-
-        physics_manager = getattr(physics, "__manager")
-
-        ground_truth_dataset = GroundTruthDataset(
-            blueprint=blueprint,
-            **blueprint[GroundTruthDataset.__name__],
-        )
 
         synthetic_dataset = SyntheticDataset(
+            blueprint=blueprint,
             device=device,
-            group_truth_dataset=ground_truth_dataset,
-            physics_manager=physics_manager,
+            physics=physics,
             **blueprint[SyntheticDataset.__name__]
         )
 
-        if self.purpose == "train":
+        if purpose == "train":
             prepare_training_pairs = PrepareTrainingPairs(
                 physics=physics,
                 **blueprint[PrepareTrainingPairs.__name__],
@@ -271,20 +267,19 @@ class Dataset(BaseDataset):
 
             self.dataset = TrainingDataset(
                 synthetic_dataset=synthetic_dataset,
-                physics_manager=physics_manager,
                 physics=physics,
                 css=css,
                 noise2inverse=noise2inverse,
                 prepare_training_pairs=prepare_training_pairs,
             )
-        elif self.purpose == "test":
+        elif purpose == "test":
             self.dataset = TestDataset(
                 synthetic_dataset=synthetic_dataset,
                 noise2inverse=noise2inverse,
                 physics=physics,
             )
         else:
-            raise ValueError(f"Unknown purpose: {self.purpose}")
+            raise ValueError(f"Unknown purpose: {purpose}")
 
     def __len__(self):
         return len(self.dataset)
