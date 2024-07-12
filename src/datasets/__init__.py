@@ -249,9 +249,7 @@ class Dataset(BaseDataset):
         super().__init__()
         self.purpose = purpose
 
-        # NOTE: The two are meant to be combined.
-        self.physics = physics
-        self.physics_manager = getattr(self.physics, "__manager")
+        physics_manager = getattr(physics, "__manager")
 
         ground_truth_dataset = GroundTruthDataset(
             blueprint=blueprint,
@@ -262,20 +260,20 @@ class Dataset(BaseDataset):
 
         synthetic_dataset = SyntheticDataset(
             group_truth_dataset=ground_truth_dataset,
-            physics_manager=self.physics_manager,
+            physics_manager=physics_manager,
             **blueprint[SyntheticDataset.__name__]
         )
 
         if self.purpose == "train":
             prepare_training_pairs = PrepareTrainingPairs(
-                physics=self.physics,
+                physics=physics,
                 **blueprint[PrepareTrainingPairs.__name__],
             )
 
             self.dataset = TrainingDataset(
                 synthetic_dataset=synthetic_dataset,
-                physics_manager=self.physics_manager,
-                physics=self.physics,
+                physics_manager=physics_manager,
+                physics=physics,
                 css=css,
                 noise2inverse=noise2inverse,
                 prepare_training_pairs=prepare_training_pairs,
@@ -284,7 +282,7 @@ class Dataset(BaseDataset):
             self.dataset = TestDataset(
                 synthetic_dataset=synthetic_dataset,
                 noise2inverse=noise2inverse,
-                physics=self.physics,
+                physics=physics,
             )
         else:
             raise ValueError(f"Unknown purpose: {self.purpose}")
