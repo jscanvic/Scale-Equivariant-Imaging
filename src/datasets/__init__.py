@@ -2,10 +2,10 @@ from torch.nn import Module
 from torch.utils.data import Dataset as BaseDataset
 from torchvision.transforms import functional as TF
 
+from crop import CropPair
 from noise2inverse import Noise2InverseTransform
 from .ground_truth import GroundTruthDataset
 from .synthetic_dataset import SyntheticDataset
-from .crop import CropPair
 from .single_image import SingleImageDataset
 
 

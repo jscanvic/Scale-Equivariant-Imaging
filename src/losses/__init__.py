@@ -3,8 +3,7 @@ from deepinv.loss import SupLoss, EILoss
 from deepinv.loss.metric import mse
 from deepinv.transform import Rotate, Shift
 
-# NOTE: This should be elsewhere.
-from datasets.crop import CropPair
+from crop import CropPair
 from transforms import ScalingTransform
 from .r2r import R2REILoss
 from .sure import SureGaussianLoss
