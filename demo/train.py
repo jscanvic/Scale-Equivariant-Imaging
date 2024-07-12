@@ -71,7 +71,10 @@ model.train()
 
 loss = get_loss(args=args, physics=physics)
 
-dataset = get_dataset(args=args, purpose="train", physics=physics, device=args.device)
+dataset = get_dataset(args=args,
+                      purpose="train",
+                      physics=physics,
+                      device=args.device)
 
 dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
