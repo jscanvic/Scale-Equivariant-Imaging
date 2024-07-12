@@ -69,8 +69,6 @@ model = get_model(
 model.to(args.device)
 model.train()
 
-dataset = get_dataset(args=args, purpose="train", physics=physics, device=args.device)
-
 # NOTE: This should be in the loss itself.
 if args.partial_sure:
     if args.sure_margin is not None:
@@ -93,6 +91,8 @@ else:
     sure_margin = 0
 
 loss = get_loss(args=args, physics=physics, sure_margin=sure_margin)
+
+dataset = get_dataset(args=args, purpose="train", physics=physics, device=args.device)
 
 dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
