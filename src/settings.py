@@ -56,3 +56,4 @@ class DefaultArgParser(ArgumentParser):
             "--SingleImageDataset__duplicates_count", type=int, default=800
         )
         self.add_argument("--data_parallel_devices", type=str, default=None)
+        self.add_argument("--physics_v2", action=BooleanOptionalAction, default=True)

@@ -96,10 +96,6 @@ for i in tqdm(indices):
     x, y = dataset[i]
     x, y = x.unsqueeze(0), y.unsqueeze(0)
 
-    if args.dataset == "ct":
-        assert x.shape[1] == 3
-        assert y.shape[1] == 3
-
     if args.model_kind != "dip":
         with torch.no_grad():
             if args.noise2inverse:

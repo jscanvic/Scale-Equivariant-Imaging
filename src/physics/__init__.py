@@ -6,7 +6,7 @@ from rng import fork_rng
 from .ct_like_filter import CTLikeFilter
 from .downsampling import Downsampling
 from .kernels import get_kernel
-from .blur import Blur
+from .blur import Blur, BlurV2
 
 # NOTE: There should ideally be a class combining the blur and downsampling operators.
 
@@ -34,11 +34,15 @@ class PhysicsManager:
         task,
         device,
         noise_level,
+        v2,
     ):
         if task == "deblurring":
             blur_kernel = BlurKernel(**blueprint[BlurKernel.__name__])
             kernel = blur_kernel.to_tensor(device)
-            physics = Blur(filter=kernel, padding="circular", device=device)
+            if v2:
+                physics = BlurV2(kernel=kernel)
+            else:
+                physics = Blur(filter=kernel, padding="circular", device=device)
         elif task == "sr":
             physics = Downsampling(antialias=True, **blueprint[Downsampling.__name__])
         elif task == "invert_a_tomography_like_filter":
@@ -78,6 +82,7 @@ def get_physics(args, device):
     blueprint[PhysicsManager.__name__] = {
         "task": args.task,
         "noise_level": args.noise_level,
+        "v2": args.physics_v2,
     }
 
     blueprint[BlurKernel.__name__] = {

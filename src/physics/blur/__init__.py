@@ -1,9 +1,10 @@
 # Code obtained from
 # https://github.com/deepinv/deepinv/blob/a1ef4a8a8de0eacb1c0d0fb463a721de7827415e/deepinv/physics/blur.py
-import torch.nn.functional as F
 import torch
+from torch.nn.functional import pad
+import torch.nn.functional as F
 from deepinv.physics.forward import LinearPhysics
-
+from deepinv.physics import adjoint_function
 
 def extend_filter(filter):
     b, c, h, w = filter.shape
@@ -191,3 +192,35 @@ class Blur(LinearPhysics):
 
     def A_adjoint(self, y):
         return conv_transpose(y, self.filter, self.padding)
+
+
+class BlurV2(LinearPhysics):
+    def __init__(self, kernel):
+        super().__init__()
+        self.kernel = kernel
+        self.fft_norm = "backward"
+
+    def A(self, x):
+        y = x
+
+        shape = y.shape[-2:]
+
+        kernel = self.kernel.to(y.device, y.dtype)
+        psf = torch.zeros(shape, device=y.device, dtype=y.dtype)
+        psf[: kernel.shape[-2], : kernel.shape[-1]] = kernel
+        psf = psf.roll(
+                (-(kernel.shape[-2] // 2), -(kernel.shape[-1] // 2)),
+                dims=(-2, -1)
+            )
+        otf = torch.fft.rfft2(psf, dim=(-2, -1), norm=self.fft_norm)
+
+
+        y = torch.fft.rfft2(y, dim=(-2, -1), norm=self.fft_norm)
+        y = otf.broadcast_to(y.shape) * y
+        y = torch.fft.irfft2(y, dim=(-2, -1), s=shape, norm=self.fft_norm)
+
+        return y
+
+    def A_adjoint(self, y):
+        fn = adjoint_function(self.A, y.shape, device=y.device, dtype=y.dtype)
+        return fn(y)
