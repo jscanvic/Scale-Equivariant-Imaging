@@ -26,6 +26,7 @@ class GroundTruthDataset(BaseDataset):
     ):
         super().__init__()
         self.size = size
+        # NOTE: Every tensor here should be stored in RAM, not on the GPU.
         self.device = device
         self.memoize_gt = memoize_gt
 
@@ -87,6 +88,41 @@ class GroundTruthDataset(BaseDataset):
         return len(self.dataset)
 
 
+class SyntheticDataset(BaseDataset):
+    def __init__(self,
+                 ground_truth_dataset,
+                 deterministic_measurements,
+                 unique_seeds,
+                 physics_manager):
+        super().__init__()
+        self.ground_truth_dataset = ground_truth_dataset
+        self.deterministic_measurements = deterministic_measurements
+        self.unique_seeds = unique_seeds
+        self.physics_manager = physics_manager
+
+    def __getitem__(self, index):
+        x = self.ground_truth_dataset[index]
+
+        if self.deterministic_measurements:
+            if self.unique_seeds:
+                seed = self.ground_truth_dataset.get_unique_id(index)
+            else:
+                seed = 0
+        else:
+            seed = None
+
+        x = x.unsqueeze(0)
+        y = self.physics_manager.randomly_degrade(x, seed=seed)
+        y = y.squeeze(0)
+        x = x.squeeze(0)
+
+        return x, y
+
+    def __len__(self):
+        return len(self.ground_truth_dataset)
+
+
+
 # NOTE: Getting small random crops should be optional and it should
 # be possible to use big crops instead, e.g. to make images
 # square-shaped which would enable stacking in the batch dimension.
@@ -110,6 +146,7 @@ class PrepareTrainingPairs(Module):
 
         T_crop = CropPair(location=self.crop_location, size=self.crop_size)
         return T_crop(x, y, xy_size_ratio=xy_size_ratio)
+
 
 
 class Dataset(BaseDataset):
@@ -136,15 +173,18 @@ class Dataset(BaseDataset):
         self.css = css
         self.noise2inverse = noise2inverse
 
-        self.deterministic_measurements = deterministic_measurements
-        self.unique_seeds = unique_seeds
-
-        self.ground_truth_dataset = GroundTruthDataset(
+        ground_truth_dataset = GroundTruthDataset(
             blueprint=blueprint,
             device=device,
             split=split,
             memoize_gt=memoize_gt,
             **blueprint[GroundTruthDataset.__name__],
+        )
+
+        self.synthetic_dataset = SyntheticDataset(
+            group_truth_dataset=ground_truth_dataset,
+            physics_manager=self.physics_manager,
+            **blueprint[SyntheticDataset.__name__]
         )
 
         self.prepare_training_pairs = PrepareTrainingPairs(
@@ -153,30 +193,19 @@ class Dataset(BaseDataset):
         )
 
     def __len__(self):
-        return len(self.ground_truth_dataset)
+        return len(self.synthetic_dataset)
 
     def __getitem__(self, index):
-        x = self.ground_truth_dataset[index]
+        x, y = self.synthetic_dataset[index]
 
         # NOTE: This should ideally be done in the class CSSLoss instead but
         # the border effects in the current implementation make it challenging.
         if self.css:
-            x = x.unsqueeze(0)
-            x = self.physics_manager.randomly_degrade(x, seed=None)
-            x = x.squeeze(0)
-
-        if self.deterministic_measurements:
-            if self.unique_seeds:
-                seed = self.ground_truth_dataset.get_unique_id(index)
-            else:
-                seed = 0
-        else:
-            seed = None
-
-        x = x.unsqueeze(0)
-        y = self.physics_manager.randomly_degrade(x, seed=seed)
-        y = y.squeeze(0)
-        x = x.squeeze(0)
+            y = y.unsqueeze(0)
+            z = self.physics_manager.randomly_degrade(y, seed=None)
+            z = z.squeeze(0)
+            y = y.squeeze(0)
+            x, y = y, z
 
         if self.purpose == "train":
             # NOTE: This should ideally be done in the model.
@@ -255,9 +284,9 @@ def get_dataset(args, purpose, physics, device):
         "duplicates_count": args.SingleImageDataset__duplicates_count,
     }
 
-    blueprint[Dataset.__name__] = {
-        "unique_seeds": args.Dataset__unique_seeds,
-        "deterministic_measurements": args.Dataset__deterministic_measurements,
+    blueprint[SyntheticDataset.__name__] = {
+        "unique_seeds": args.SyntheticDataset__unique_seeds,
+        "deterministic_measurements": args.Dataset__deterministic_measure
     }
 
     return Dataset(
@@ -269,5 +298,4 @@ def get_dataset(args, purpose, physics, device):
         noise2inverse=noise2inverse,
         split=split,
         memoize_gt=memoize_gt,
-        **blueprint[Dataset.__name__],
     )

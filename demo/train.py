@@ -56,7 +56,7 @@ parser.add_argument("--lr_scheduler_kind", type=str, default="multi_step_decay")
 # NOTE: It'd be better to default to .999
 parser.add_argument("--optimizer_beta2", type=float, default=0.99)
 # NOTE: This should be set to true!
-parser.add_argument("--Dataset__deterministic_measurements", action=BooleanOptionalAction, default=False)
+parser.add_argument("--SyntheticDataset__deterministic_measurements", action=BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
 physics = get_physics(args, device=args.device)
