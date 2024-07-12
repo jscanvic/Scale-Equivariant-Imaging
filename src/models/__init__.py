@@ -20,22 +20,15 @@ class Identity(Module):
         return y
 
 
-class Model(Module):
-    def __init__(
-        self,
-        blueprint,
-        kind,
-        physics,
-        task,
-        sr_factor,
-        device,
-        noise_level,
-        data_parallel_devices,
-    ):
+class ProposedModel(Module):
+    def __init__(self,
+                 blueprint,
+                 kind,
+                 sampling_rate,
+             ):
         super().__init__()
-        sampling_rate = sr_factor if task == "sr" else 1
         if kind == "swinir":
-            upsampler = "pixelshuffle" if task == "sr" else None
+            upsampler = "pixelshuffle" if sr_factor > 1 else None
             self.model = SwinIR(
                 upscale=sampling_rate,
                 upsampler=upsampler,
@@ -66,6 +59,36 @@ class Model(Module):
                 upsampling_rate=sampling_rate,
                 **blueprint[ConvNeuralNetwork.__name__],
             )
+        else:
+            raise ValueError(f"Unknown model kind: {kind}")
+
+    def forward(self, y):
+        return self.model(y)
+
+    def get_backbone(self):
+        return self.model
+
+
+class Model(Module):
+    def __init__(
+        self,
+        blueprint,
+        kind,
+        physics,
+        task,
+        sr_factor,
+        device,
+        noise_level,
+        data_parallel_devices,
+    ):
+        super().__init__()
+        sampling_rate = sr_factor if task == "sr" else 1
+        if kind in ["swinir", "CNN"]:
+            self.model = ProposedModel(
+                    blueprint=blueprint,
+                    kind=kind,
+                    sampling_rate=sampling_rate,
+                )
         elif kind == "dip":
             self.model = DeepImagePrior(
                 physics=physics,
@@ -110,7 +133,12 @@ class Model(Module):
         if isinstance(model, DataParallel):
             model = model.module
 
-        return self.model
+        if isinstance(model, ProposedModel):
+            backbone = model.get_backbone()
+        else:
+            backbone = model
+
+        return backbone
 
     def get_weights(self):
         backbone = self.get_backbone()
