@@ -3,6 +3,8 @@ from deepinv.loss import SupLoss, EILoss
 from deepinv.loss.metric import mse
 from deepinv.transform import Rotate, Shift
 
+# NOTE: This should be elsewhere.
+from datasets.crop import CropPair
 from transforms import ScalingTransform
 from .r2r import R2REILoss
 from .sure import SureGaussianLoss
@@ -143,7 +145,9 @@ class Loss(Module):
         sure_cropped_div,
         sure_averaged_cst,
         sure_margin,
-        method,):
+        method,
+        crop_training_pairs,
+        ):
         super().__init__()
 
         if method == "supervised":
@@ -176,12 +180,24 @@ class Loss(Module):
         else:
             raise ValueError(f"Unknwon method: {method}")
 
+        if crop_training_pairs:
+            self.crop_fn = CropPair(location="random", size=48)
+        else:
+            self.crop_fn = None
+
     def forward(self, x, y, model):
+        if self.crop_fn is not None:
+            x, y = self.crop_fn(x, y)
+
         return self.loss(x=x, y=y, model=model)
 
 
 def get_loss(args, physics, sure_margin):
     blueprint = {}
+
+    blueprint[Loss.__name__] = {
+        "crop_training_pairs": args.Loss__crop_training_pairs,
+    }
 
     blueprint[ProposedLoss.__name__] = {
         "stop_gradient": args.ProposedLoss__stop_gradient,
@@ -213,6 +229,7 @@ def get_loss(args, physics, sure_margin):
         sure_cropped_div=sure_cropped_div,
         sure_averaged_cst=sure_averaged_cst,
         sure_margin=sure_margin,
+        **blueprint[Loss.__name__],
     )
 
     return loss

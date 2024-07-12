@@ -23,6 +23,10 @@ from scheduler import get_lr_scheduler
 parser = DefaultArgParser()
 # NOTE: Some of these arguments should be better tied to their respective class.
 parser.add_argument("--method", type=str)
+# NOTE: This should be set to true!
+parser.add_argument(
+        "--Loss__crop_training_pairs", action=BooleanOptionalAction, default=False
+)
 parser.add_argument(
     "--ProposedLoss__transforms", type=str, default="Scaling_Transforms"
 )
@@ -51,15 +55,11 @@ parser.add_argument("--sure_margin", type=int, default=None)
 parser.add_argument("--lr_scheduler_kind", type=str, default="multi_step_decay")
 # NOTE: It'd be better to default to .999
 parser.add_argument("--optimizer_beta2", type=float, default=0.99)
-# NOTE: the measurements should always be deterministic except for
-# supervised training. Although it can be dealt with in the loss as well.
+# NOTE: This should be set to true!
 parser.add_argument("--Dataset__deterministic_measurements", action=BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
-# NOTE: This should ideally take less arguments and let the function extract
-# what it needs from the args directly.
 physics = get_physics(args, device=args.device)
-
 
 model = get_model(
     args=args,
