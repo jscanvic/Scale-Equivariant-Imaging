@@ -25,7 +25,6 @@ class GroundTruthDataset(BaseDataset):
     ):
         super().__init__()
         self.size = size
-        # NOTE: Every tensor here should be stored in RAM, not on the GPU.
         self.memoize_gt = memoize_gt
 
         if dataset_name == "div2k":
