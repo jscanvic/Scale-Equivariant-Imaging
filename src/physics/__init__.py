@@ -65,9 +65,11 @@ class PhysicsManager:
         return self.physics
 
     def randomly_degrade(self, x, seed):
+        # NOTE: Forking the RNG and setting the seed could be done all at once.
         preserve_rng_state = seed is not None
         with fork_rng(enabled=preserve_rng_state):
-            torch.manual_seed(seed)
+            if seed is not None:
+                torch.manual_seed(seed)
 
             x = self.physics.A(x)
             x = self.physics.noise_model(x)

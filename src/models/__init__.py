@@ -28,7 +28,7 @@ class ProposedModel(Module):
              ):
         super().__init__()
         if kind == "swinir":
-            upsampler = "pixelshuffle" if sr_factor > 1 else None
+            upsampler = "pixelshuffle" if sampling_rate > 1 else None
             self.model = SwinIR(
                 upscale=sampling_rate,
                 upsampler=upsampler,
