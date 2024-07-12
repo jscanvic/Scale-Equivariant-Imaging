@@ -9,12 +9,9 @@ from .crop import CropPair
 from .single_image import SingleImageDataset
 
 
-
 # NOTE: Getting small random crops should be optional and it should
 # be possible to use big crops instead, e.g. to make images
 # square-shaped which would enable stacking in the batch dimension.
-
-
 class PrepareTrainingPairs(Module):
     def __init__(self, physics, crop_size, crop_location):
         super().__init__()
