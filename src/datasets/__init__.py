@@ -93,7 +93,7 @@ class GroundTruthDataset(BaseDataset):
 
 
 class PrepareTrainingPairs(Module):
-    def __init__(self, physics, crop_size=48, crop_location="random"):
+    def __init__(self, physics, crop_size, crop_location):
         super().__init__()
         self.physics = physics
         self.crop_size = crop_size

@@ -37,7 +37,10 @@ class DefaultArgParser(ArgumentParser):
         # to keep it right here as the preparation of training pairs is
         # involved in the class Dataset (which itself should ideally be
         # elsewhere)
-        self.add_argument("--PrepareTrainingPairs__crop_size", type=int, default=48)
+        # NOTE: This is pretty much meant to be the size of ground truth
+        # images, i.e. it crop squares of the largest size. For this reason, it
+        # is awkward to have to specify the size here as well.
+        self.add_argument("--PrepareTrainingPairs__crop_size", type=int, default=256)
         self.add_argument(
             "--PrepareTrainingPairs__crop_location", type=str, default="random"
         )

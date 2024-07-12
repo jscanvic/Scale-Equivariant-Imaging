@@ -23,10 +23,10 @@ from scheduler import get_lr_scheduler
 parser = DefaultArgParser()
 # NOTE: Some of these arguments should be better tied to their respective class.
 parser.add_argument("--method", type=str)
-# NOTE: This should be set to true!
 parser.add_argument(
-        "--Loss__crop_training_pairs", action=BooleanOptionalAction, default=False
+        "--Loss__crop_training_pairs", action=BooleanOptionalAction, default=True
 )
+parser.add_argument("--Loss__crop_size", type=int, default=48)
 parser.add_argument(
     "--ProposedLoss__transforms", type=str, default="Scaling_Transforms"
 )

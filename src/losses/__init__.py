@@ -147,6 +147,7 @@ class Loss(Module):
         sure_margin,
         method,
         crop_training_pairs,
+        crop_size,
         ):
         super().__init__()
 
@@ -181,7 +182,7 @@ class Loss(Module):
             raise ValueError(f"Unknwon method: {method}")
 
         if crop_training_pairs:
-            self.crop_fn = CropPair(location="random", size=48)
+            self.crop_fn = CropPair(location="random", size=crop_size)
         else:
             self.crop_fn = None
 
@@ -197,6 +198,7 @@ def get_loss(args, physics, sure_margin):
 
     blueprint[Loss.__name__] = {
         "crop_training_pairs": args.Loss__crop_training_pairs,
+        "crop_size": args.Loss__crop_size,
     }
 
     blueprint[ProposedLoss.__name__] = {

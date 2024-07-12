@@ -6,7 +6,7 @@ from torchvision.transforms import functional as TF
 
 
 class CropPair(Module):
-    def __init__(self, location, size=48):
+    def __init__(self, location, size):
         super().__init__()
         assert location in ["random", "center"]
         self.location = location
