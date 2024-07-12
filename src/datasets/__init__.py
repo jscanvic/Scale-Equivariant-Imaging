@@ -157,7 +157,6 @@ class Dataset(BaseDataset):
         physics,
         css,
         noise2inverse,
-        split,
         device,
         memoize_gt,
         deterministic_measurements,
@@ -176,7 +175,6 @@ class Dataset(BaseDataset):
         ground_truth_dataset = GroundTruthDataset(
             blueprint=blueprint,
             device=device,
-            split=split,
             memoize_gt=memoize_gt,
             **blueprint[GroundTruthDataset.__name__],
         )
@@ -252,12 +250,10 @@ def get_dataset(args, purpose, physics, device):
     if purpose == "test":
         noise2inverse = args.noise2inverse
         css = False
-        split = args.split
         memoize_gt = False
     elif purpose == "train":
         noise2inverse = args.method == "noise2inverse"
         css = args.method == "css"
-        split = "train"
         memoize_gt = args.memoize_gt
     else:
         raise ValueError(f"Unknown purpose: {purpose}")
@@ -272,6 +268,7 @@ def get_dataset(args, purpose, physics, device):
         "datasets_dir": args.GroundTruthDataset__datasets_dir,
         "download": args.GroundTruthDataset__download,
         "size": args.GroundTruthDataset__size,
+        "split": args.GroundTruthDataset__split,
     }
 
     blueprint[PrepareTrainingPairs.__name__] = {
@@ -296,6 +293,5 @@ def get_dataset(args, purpose, physics, device):
         purpose=purpose,
         css=css,
         noise2inverse=noise2inverse,
-        split=split,
         memoize_gt=memoize_gt,
     )
