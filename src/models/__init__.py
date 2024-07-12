@@ -21,11 +21,12 @@ class Identity(Module):
 
 
 class ProposedModel(Module):
-    def __init__(self,
-                 blueprint,
-                 kind,
-                 sampling_rate,
-             ):
+    def __init__(
+        self,
+        blueprint,
+        kind,
+        sampling_rate,
+    ):
         super().__init__()
         if kind == "swinir":
             upsampler = "pixelshuffle" if sampling_rate > 1 else None
@@ -85,10 +86,10 @@ class Model(Module):
         sampling_rate = sr_factor if task == "sr" else 1
         if kind in ["swinir", "CNN"]:
             self.model = ProposedModel(
-                    blueprint=blueprint,
-                    kind=kind,
-                    sampling_rate=sampling_rate,
-                )
+                blueprint=blueprint,
+                kind=kind,
+                sampling_rate=sampling_rate,
+            )
         elif kind == "dip":
             self.model = DeepImagePrior(
                 physics=physics,

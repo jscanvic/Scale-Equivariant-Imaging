@@ -26,7 +26,6 @@ class BlurKernel:
         return kernel
 
 
-
 class PhysicsManager:
 
     def __init__(
@@ -39,14 +38,9 @@ class PhysicsManager:
         if task == "deblurring":
             blur_kernel = BlurKernel(**blueprint[BlurKernel.__name__])
             kernel = blur_kernel.to_tensor(device)
-            physics = Blur(
-                filter=kernel, padding="circular", device=device
-            )
+            physics = Blur(filter=kernel, padding="circular", device=device)
         elif task == "sr":
-            physics = Downsampling(
-                antialias=True,
-                **blueprint[Downsampling.__name__]
-            )
+            physics = Downsampling(antialias=True, **blueprint[Downsampling.__name__])
         elif task == "invert_a_tomography_like_filter":
             physics = CTLikeFilter()
         else:

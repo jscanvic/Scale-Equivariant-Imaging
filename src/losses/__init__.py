@@ -148,14 +148,14 @@ class Loss(Module):
         method,
         crop_training_pairs,
         crop_size,
-        ):
+    ):
         super().__init__()
 
         if method == "supervised":
             self.loss = SupervisedLoss(
-                    physics=physics,
-                    **blueprint[SupervisedLoss.__name__],
-                )
+                physics=physics,
+                **blueprint[SupervisedLoss.__name__],
+            )
         elif method == "css":
             self.loss = CSSLoss(physics=physics)
         elif method == "noise2inverse":

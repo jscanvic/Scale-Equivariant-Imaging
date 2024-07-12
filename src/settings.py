@@ -31,7 +31,9 @@ class DefaultArgParser(ArgumentParser):
         )
         # NOTE: This should be set to true!
         self.add_argument(
-            "--SyntheticDataset__unique_seeds", action=BooleanOptionalAction, default=False
+            "--SyntheticDataset__unique_seeds",
+            action=BooleanOptionalAction,
+            default=False,
         )
         # NOTE: This should ideally be in the training script but it is easier
         # to keep it right here as the preparation of training pairs is

@@ -87,13 +87,14 @@ class GroundTruthDataset(BaseDataset):
 
 
 class SyntheticDataset(BaseDataset):
-    def __init__(self,
-                 blueprint,
-                 device,
-                 deterministic_measurements,
-                 unique_seeds,
-                 physics,
-             ):
+    def __init__(
+        self,
+        blueprint,
+        device,
+        deterministic_measurements,
+        unique_seeds,
+        physics,
+    ):
         super().__init__()
         self.device = device
         self.deterministic_measurements = deterministic_measurements
@@ -128,7 +129,6 @@ class SyntheticDataset(BaseDataset):
         return len(self.ground_truth_dataset)
 
 
-
 # NOTE: Getting small random crops should be optional and it should
 # be possible to use big crops instead, e.g. to make images
 # square-shaped which would enable stacking in the batch dimension.
@@ -155,13 +155,14 @@ class PrepareTrainingPairs(Module):
 
 
 class TrainingDataset(BaseDataset):
-    def __init__(self,
-                 synthetic_dataset
-                 physics,
-                 css,
-                 noise2inverse,
-                 prepare_training_pairs,
-             ):
+    def __init__(
+        self,
+        synthetic_dataset,
+        physics,
+        css,
+        noise2inverse,
+        prepare_training_pairs,
+    ):
         super().__init__()
         self.synthetic_dataset = synthetic_dataset
         self.physics = physics
@@ -205,11 +206,12 @@ class TrainingDataset(BaseDataset):
 
 
 class TestDataset(BaseDataset):
-    def __init__(self,
-                 synthetic_dataset,
-                 noise2inverse,
-                 physics,
-             ):
+    def __init__(
+        self,
+        synthetic_dataset,
+        noise2inverse,
+        physics,
+    ):
         super().__init__()
         self.synthetic_dataset = synthetic_dataset
         self.noise2inverse = noise2inverse
@@ -256,7 +258,7 @@ class Dataset(BaseDataset):
             blueprint=blueprint,
             device=device,
             physics=physics,
-            **blueprint[SyntheticDataset.__name__]
+            **blueprint[SyntheticDataset.__name__],
         )
 
         if purpose == "train":
@@ -324,7 +326,7 @@ def get_dataset(args, purpose, physics, device):
 
     blueprint[SyntheticDataset.__name__] = {
         "unique_seeds": args.SyntheticDataset__unique_seeds,
-        "deterministic_measurements": args.Dataset__deterministic_measure
+        "deterministic_measurements": args.Dataset__deterministic_measure,
     }
 
     return Dataset(

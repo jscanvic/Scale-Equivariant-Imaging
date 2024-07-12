@@ -24,7 +24,7 @@ parser = DefaultArgParser()
 # NOTE: Some of these arguments should be better tied to their respective class.
 parser.add_argument("--method", type=str)
 parser.add_argument(
-        "--Loss__crop_training_pairs", action=BooleanOptionalAction, default=True
+    "--Loss__crop_training_pairs", action=BooleanOptionalAction, default=True
 )
 parser.add_argument("--Loss__crop_size", type=int, default=48)
 parser.add_argument(
@@ -40,7 +40,11 @@ parser.add_argument(
     "--ScalingTransform__antialias", action=BooleanOptionalAction, default=False
 )
 # NOTE: This should be set to true!
-parser.add_argument("--SupervisedLoss__augment_measurements", action=BooleanOptionalAction, default=False)
+parser.add_argument(
+    "--SupervisedLoss__augment_measurements",
+    action=BooleanOptionalAction,
+    default=False,
+)
 parser.add_argument("--out_dir", type=str)
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--epochs", type=int, default=None)
@@ -56,7 +60,11 @@ parser.add_argument("--lr_scheduler_kind", type=str, default="multi_step_decay")
 # NOTE: It'd be better to default to .999
 parser.add_argument("--optimizer_beta2", type=float, default=0.99)
 # NOTE: This should be set to true!
-parser.add_argument("--SyntheticDataset__deterministic_measurements", action=BooleanOptionalAction, default=False)
+parser.add_argument(
+    "--SyntheticDataset__deterministic_measurements",
+    action=BooleanOptionalAction,
+    default=False,
+)
 parser.add_argument("--GroundTruthDataset__split", type=str, default="train")
 args = parser.parse_args()
 
@@ -93,9 +101,7 @@ else:
     assert args.sure_margin is None
     sure_margin = 0
 
-loss = get_loss(args=args,
-                physics=physics,
-                sure_margin=sure_margin)
+loss = get_loss(args=args, physics=physics, sure_margin=sure_margin)
 
 dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
