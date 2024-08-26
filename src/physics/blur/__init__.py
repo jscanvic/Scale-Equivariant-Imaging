@@ -198,6 +198,8 @@ class BlurV2(LinearPhysics):
     def __init__(self, kernel):
         super().__init__()
         self.kernel = kernel
+        # NOTE: This is meant to go.
+        self.filter = self.kernel
         self.fft_norm = "backward"
 
     def A(self, x):

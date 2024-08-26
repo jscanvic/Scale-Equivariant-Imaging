@@ -154,6 +154,8 @@ class UNet(Module):
     def __init__(
         self,
         in_channels,
+        hidden_channels,
+        inout_convs,
         scales,
         num_conv_blocks,
         rate,
@@ -169,7 +171,14 @@ class UNet(Module):
         self.downsampling_layers = ModuleList()
         self.upsampling_layers = ModuleList()
 
-        layer_in_channels = in_channels
+        if inout_convs:
+            self.in_conv = Conv2d(in_channels, hidden_channels, kernel_size=3, padding="same")
+            self.out_conv = Conv2d(hidden_channels, in_channels, kernel_size=3, padding="same")
+
+            layer_in_channels = hidden_channels
+        else:
+            layer_in_channels = in_channels
+
         for _ in range(scales - 1):
             # append the conv blocks
             conv_sequence = Sequential()
@@ -211,6 +220,9 @@ class UNet(Module):
 
         queue = []
 
+        if hasattr(self, "in_conv"):
+            x = self.in_conv(x)
+
         for _ in range(self.scales - 1):
             xb = x
             x = next(conv_it)(x)
@@ -228,21 +240,26 @@ class UNet(Module):
             x = x + x2
             x = next(conv_it)(x)
 
+        if hasattr(self, "out_conv"):
+            x = self.out_conv(x)
+
         if self.residual:
             x = x + x0
 
         return x
 
 
-class ConvNeuralNetwork(Module):
+class ConvolutionalModel(Module):
     def __init__(
         self,
         in_channels,
         upsampling_rate,
-        unet_residual,
-        unet_inner_residual,
-        num_conv_blocks=5,
-        scales=5,
+        residual,
+        inner_residual,
+        num_conv_blocks,
+        hidden_channels,
+        inout_convs,
+        scales,
     ):
         super().__init__()
         self.seq = Sequential()
@@ -256,11 +273,13 @@ class ConvNeuralNetwork(Module):
 
         module = UNet(
             in_channels=in_channels,
+            hidden_channels=hidden_channels,
+            inout_convs=inout_convs,
             scales=scales,
             num_conv_blocks=num_conv_blocks,
-            residual=unet_residual,
+            residual=residual,
+            inner_residual=inner_residual,
             rate=2,
-            inner_residual=unet_inner_residual,
         )
         self.seq.append(module)
 

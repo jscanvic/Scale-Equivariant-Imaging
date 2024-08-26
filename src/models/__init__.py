@@ -4,7 +4,7 @@ from torch.nn.parallel import DataParallel
 from torch.nn import Module
 
 # NOTE: The file structure should be way simpler.
-from .convolutional import ConvNeuralNetwork
+from .convolutional import ConvolutionalModel
 from .pnp import PnPModel
 from .dip import DeepImagePrior
 from .bm3d_deblurring import BM3D
@@ -14,7 +14,6 @@ from .dps import DPS
 from .tv import TV
 
 
-# NOTE: This should not exist!
 class Identity(Module):
     def forward(self, y):
         return y
@@ -33,11 +32,11 @@ class ProposedModel(Module):
     def __init__(
         self,
         blueprint,
-        kind,
+        architecture,
         sampling_rate,
     ):
         super().__init__()
-        if kind == "swinir":
+        if architecture == "Transformer":
             upsampler = "pixelshuffle" if sampling_rate > 1 else None
             self.model = SwinIR(
                 upscale=sampling_rate,
@@ -63,14 +62,14 @@ class ProposedModel(Module):
                 resi_connection="1conv",
                 pretrained=None,
             )
-        elif kind == "CNN":
-            self.model = ConvNeuralNetwork(
+        elif architecture == "Convolutional":
+            self.model = ConvolutionalModel(
                 in_channels=3,
                 upsampling_rate=sampling_rate,
-                **blueprint[ConvNeuralNetwork.__name__],
+                **blueprint[ConvolutionalModel.__name__],
             )
         else:
-            raise ValueError(f"Unknown model kind: {kind}")
+            raise ValueError(f"Unknown model kind: {architecture}")
 
     def forward(self, y):
         return self.model(y)
@@ -82,9 +81,7 @@ class ProposedModel(Module):
 class Model(Module):
     def __init__(
         self,
-        blueprint,
-        kind,
-        physics,
+        blueprint, kind, physics,
         task,
         sr_factor,
         device,
@@ -93,19 +90,19 @@ class Model(Module):
     ):
         super().__init__()
         sampling_rate = sr_factor if task == "sr" else 1
-        if kind in ["swinir", "CNN"]:
+        if kind == "Proposed":
             self.model = ProposedModel(
                 blueprint=blueprint,
-                kind=kind,
                 sampling_rate=sampling_rate,
+                **blueprint[ProposedModel.__name__],
             )
-        elif kind == "dip":
+        elif kind == "DeepImagePrior":
             self.model = DeepImagePrior(
                 physics=physics,
                 sr_factor=sr_factor,
                 **blueprint[DeepImagePrior.__name__],
             )
-        elif kind == "pnp":
+        elif kind == "PlugAndPlay":
             self.model = PnPModel(
                 channels=3,
                 early_stop=True,
@@ -113,19 +110,19 @@ class Model(Module):
                 noise_level_img=noise_level / 255,
                 device=device,
             )
-        elif kind == "bm3d":
+        elif kind == "BM3D":
             self.model = BM3D(physics=physics, sigma_psd=noise_level / 255)
-        elif kind == "diffpir":
+        elif kind == "DiffPIR":
             self.model = DiffPIR(physics=physics)
-        elif kind == "dps":
+        elif kind == "DPS":
             self.model = DPS(physics=physics, device=device)
-        elif kind == "tv":
+        elif kind == "TV":
             self.model = TV(physics=physics, **blueprint[TV.__name__])
-        elif kind == "id":
+        elif kind == "Identity":
             self.model = Identity()
-        elif kind == "inv":
+        elif kind == "InverseFilter":
             self.model = InverseFilter(physics=physics)
-        elif kind == "up":
+        elif kind == "Upsample":
             self.model = Upsample(factor=sr_factor)
         else:
             raise ValueError(f"Unknown model kind: {kind}")
@@ -173,10 +170,13 @@ def get_model(
     )
 
     blueprint = {}
-    blueprint[ConvNeuralNetwork.__name__] = {
-        "unet_residual": args.unet_residual,
-        "unet_inner_residual": args.UNet__inner_residual,
-        "num_conv_blocks": args.unet_num_conv_blocks,
+    blueprint[ConvolutionalModel.__name__] = {
+        "residual": args.ConvolutionalModel__residual,
+        "inner_residual": args.ConvolutionalModel__inner_residual,
+        "num_conv_blocks": args.ConvolutionalModel__num_conv_blocks,
+        "inout_convs": args.ConvolutionalModel__inout_convs,
+        "hidden_channels": args.ConvolutionalModel__hidden_channels,
+        "scales": args.ConvolutionalModel__scales,
     }
 
     if hasattr(args, "dip_iterations") and args.dip_iterations is not None:
@@ -202,6 +202,10 @@ def get_model(
         "sr_factor": args.sr_factor,
         "noise_level": args.noise_level,
         "kind": args.model_kind,
+    }
+
+    blueprint[ProposedModel.__name__] = {
+        "architecture": args.ProposedModel__architecture,
     }
 
     model = Model(

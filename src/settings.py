@@ -45,12 +45,18 @@ class DefaultArgParser(ArgumentParser):
         self.add_argument(
             "--PrepareTrainingPairs__crop_location", type=str, default="random"
         )
-        self.add_argument("--model_kind", type=str, default="swinir")
-        self.add_argument("--unet_residual", action=BooleanOptionalAction, default=True)
+        self.add_argument("--model_kind", type=str, default="Proposed")
+        self.add_argument("--ProposedModel__architecture", type=str, default="Transformer")
+        self.add_argument("--ConvolutionalModel__residual", action=BooleanOptionalAction, default=True)
         self.add_argument(
-            "--UNet__inner_residual", action=BooleanOptionalAction, default=True
+            "--ConvolutionalModel__inner_residual", action=BooleanOptionalAction, default=True
         )
-        self.add_argument("--unet_num_conv_blocks", type=int, default=5)
+        self.add_argument(
+            "--ConvolutionalModel__inout_convs", action=BooleanOptionalAction, default=True
+        )
+        self.add_argument("--ConvolutionalModel__hidden_channels", type=int, default=32)
+        self.add_argument("--ConvolutionalModel__scales", type=int, default=5)
+        self.add_argument("--ConvolutionalModel__num_conv_blocks", type=int, default=1)
         self.add_argument("--SingleImageDataset__image_path", type=str, default=None)
         self.add_argument(
             "--SingleImageDataset__duplicates_count", type=int, default=800
