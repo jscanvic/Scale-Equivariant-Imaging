@@ -18,6 +18,7 @@ class DefaultArgParser(ArgumentParser):
         )
         self.add_argument(
             "--GroundTruthDataset__download",
+            "--download",
             action=BooleanOptionalAction,
             default=False,
         )
