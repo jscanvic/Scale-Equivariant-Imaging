@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+if [ "$#" -lt 3 ]; then
+	echo "Usage: $0 <rate> <weights> <blurred_dir> <out_dir> [options]"
+	exit 1
+fi
+
+export PYTHONPATH="$(dirname "$0")/../src"
+python "$(dirname "$0")/../demo/test.py" \
+	--task sr \
+	--sr_factor "$1" \
+	--save_images \
+	--weights "$2" \
+	--dataset "$3" \
+	--out_dir "$4" \
+	"${@:5}"
