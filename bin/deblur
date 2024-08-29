@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+if [ "$#" -lt 3 ]; then
+	echo "Usage: $0 <weights> <blurred_dir> <out_dir> [options]"
+	exit 1
+fi
+
+export PYTHONPATH="$(dirname "$0")/../src"
+python "$(dirname "$0")/../demo/test.py" \
+	--task deblurring \
+	--save_images \
+	--weights "$1" \
+	--dataset "$2" \
+	--out_dir "$3" \
+	"${@:4}"

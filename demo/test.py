@@ -44,7 +44,10 @@ parser.add_argument(
 parser.add_argument("--memoize_gt", action=BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
-physics = get_physics(args, device=args.device)
+if not isdir(args.dataset):
+    physics = get_physics(args, device=args.device)
+else:
+    physics = None
 
 model = get_model(
     args=args,

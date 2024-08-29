@@ -179,15 +179,18 @@ def get_model(
         "scales": args.ConvolutionalModel__scales,
     }
 
-    if hasattr(args, "dip_iterations") and args.dip_iterations is not None:
-        dip_iterations = args.dip_iterations
+    if args.model_kind == "DeepImagePrior":
+        if hasattr(args, "dip_iterations") and args.dip_iterations is not None:
+            dip_iterations = args.dip_iterations
+        else:
+            if args.task == "deblurring" and "Gaussian" in args.kernel:
+                dip_iterations = 4000
+            elif args.task == "deblurring":
+                dip_iterations = 1000
+            elif args.task == "sr":
+                dip_iterations = 1000
     else:
-        if args.task == "deblurring" and "Gaussian" in args.kernel:
-            dip_iterations = 4000
-        elif args.task == "deblurring":
-            dip_iterations = 1000
-        elif args.task == "sr":
-            dip_iterations = 1000
+        dip_iterations = None
     blueprint[DeepImagePrior.__name__] = {
         "iterations": dip_iterations,
     }
