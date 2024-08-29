@@ -28,3 +28,18 @@ def save_training_state(epoch, model, optimizer, scheduler, state_path):
         },
         state_path,
     )
+
+
+def get_weights(weights_name, device):
+    if os.path.exists(weights_name):
+        weights = torch.load(weights_name, map_location=device)
+    else:
+        weights_url = f"https://huggingface.co/jscanvic/scale-equivariant-imaging/resolve/main/{weights_name}.pt?download=true"
+        weights = torch.hub.load_state_dict_from_url(
+            weights_url, map_location=device
+        )
+
+    if "params" in weights:
+        weights = weights["params"]
+
+    return weights

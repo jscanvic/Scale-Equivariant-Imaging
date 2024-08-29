@@ -15,7 +15,7 @@ from datasets import get_dataset
 from losses import get_loss
 from metrics import psnr_fn
 from models import get_model
-from training import save_training_state
+from training import save_training_state, get_weights
 from physics import get_physics
 from settings import DefaultArgParser
 from scheduler import get_lr_scheduler
@@ -57,6 +57,8 @@ parser.add_argument(
     default=True,
 )
 parser.add_argument("--GroundTruthDataset__split", type=str, default="train")
+parser.add_argument("--weights", type=str, default=None)
+parser.add_argument("--lr", type=float, default=None)
 args = parser.parse_args()
 
 physics = get_physics(args, device=args.device)
@@ -69,12 +71,36 @@ model = get_model(
 model.to(args.device)
 model.train()
 
+if args.weights is not None:
+    weights = get_weights(args.weights, args.device)
+    model.load_weights(weights)
+
 loss = get_loss(args=args, physics=physics)
 
-dataset = get_dataset(args=args,
-                      purpose="train",
-                      physics=physics,
-                      device=args.device)
+import os
+from os.path import isdir
+if isdir(args.dataset):
+    from glob import glob
+    from os.path import basename
+    from torchvision.io import read_image
+    from torchvision.transforms import RandomCrop
+    dataset = []
+    for i, f in enumerate(glob(os.path.join(args.dataset, "*.png"))):
+        y = read_image(f)
+        y = y.to(args.device)
+        y = y.float() / 255.0
+        # Discard the alpha channel if it exists
+        y = y[:3, :, :]
+        assert args.method == "proposed", "Fine-tuning is only supported for the proposed method"
+        x = torch.zeros_like(y)
+        f_crop = RandomCrop(args.Loss__crop_size)
+        x, y = f_crop(x), f_crop(y)
+        dataset.append((x, y))
+else:
+    dataset = get_dataset(args=args,
+                          purpose="train",
+                          physics=physics,
+                          device=args.device)
 
 dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
@@ -93,7 +119,12 @@ else:
         raise ValueError(f"Unknown dataset: {args.dataset}")
 
 # NOTE: It'd be better if the learning rate was the same for all tasks.
-lr = 2e-4 if args.task == "sr" else 5e-4
+if args.lr is not None:
+    lr = args.lr
+elif args.task == "sr":
+    lr = 2e-4
+else:
+    lr = 5e-4
 optimizer = Adam(model.parameters(), lr=lr, betas=(0.9, args.optimizer_beta2))
 scheduler = get_lr_scheduler(
     optimizer=optimizer, epochs=epochs, lr_scheduler_kind=args.lr_scheduler_kind

@@ -17,6 +17,7 @@ from models import get_model
 from physics import get_physics
 from settings import DefaultArgParser
 from noise2inverse import Noise2InverseModel
+from training import get_weights
 
 torch.manual_seed(0)
 np.random.seed(0)
@@ -54,17 +55,7 @@ model.to(args.device)
 model.eval()
 
 if args.weights is not None:
-    if os.path.exists(args.weights):
-        weights = torch.load(args.weights, map_location=args.device)
-    else:
-        weights_url = f"https://huggingface.co/jscanvic/scale-equivariant-imaging/resolve/main/{args.weights}.pt?download=true"
-        weights = torch.hub.load_state_dict_from_url(
-            weights_url, map_location=args.device
-        )
-
-    if "params" in weights:
-        weights = weights["params"]
-
+    weights = get_weights(args.weights, args.device)
     model.load_weights(weights)
 
 basename_table = {}
