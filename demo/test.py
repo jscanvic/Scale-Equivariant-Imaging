@@ -3,6 +3,7 @@
 import bm3d
 
 import os
+from os.path import isdir
 from math import isnan
 from argparse import BooleanOptionalAction
 
@@ -66,7 +67,23 @@ if args.weights is not None:
 
     model.load_weights(weights)
 
-dataset = get_dataset(args=args, purpose="test", physics=physics, device=args.device)
+basename_table = {}
+if isdir(args.dataset):
+    from glob import glob
+    from os.path import basename
+    from torchvision.io import read_image
+    dataset = []
+    for i, f in enumerate(glob(os.path.join(args.dataset, "*.png"))):
+        y = read_image(f)
+        y = y.to(args.device)
+        y = y.float() / 255.0
+        # Discard the alpha channel if it exists
+        y = y[:3, :, :]
+        x = None
+        dataset.append((x, y))
+        basename_table[i] = basename(f)[:-4]
+else:
+    dataset = get_dataset(args=args, purpose="test", physics=physics, device=args.device)
 
 psnr_list = []
 ssim_list = []
@@ -94,7 +111,10 @@ else:
 
 for i in tqdm(indices):
     x, y = dataset[i]
-    x, y = x.unsqueeze(0), y.unsqueeze(0)
+
+    if x is not None:
+        x = x.unsqueeze(0)
+    y = y.unsqueeze(0)
 
     if args.model_kind != "dip":
         with torch.no_grad():
@@ -121,14 +141,15 @@ for i in tqdm(indices):
     else:
         x_hat = model(y).detach()
 
-    psnr_val = psnr_fn(x_hat, x).item()
-    ssim_val = ssim_fn(x_hat, x).item()
+    if x is not None:
+        psnr_val = psnr_fn(x_hat, x).item()
+        ssim_val = ssim_fn(x_hat, x).item()
 
-    psnr_list.append(psnr_val)
-    ssim_list.append(ssim_val)
+        psnr_list.append(psnr_val)
+        ssim_list.append(ssim_val)
 
-    if args.print_all_metrics:
-        print(f"METRICS_{i}: PSNR: {psnr_val:.1f}, SSIM: {ssim_val:.3f}")
+        if args.print_all_metrics:
+            print(f"METRICS_{i}: PSNR: {psnr_val:.1f}, SSIM: {ssim_val:.3f}")
 
     if args.save_images:
         from torchvision.utils import save_image
@@ -136,19 +157,22 @@ for i in tqdm(indices):
         assert args.out_dir is not None
         os.makedirs(args.out_dir, exist_ok=True)
 
-        save_image(x, os.path.join(args.out_dir, f"{i}_x.png"))
-        save_image(x_hat, os.path.join(args.out_dir, f"{i}_x_hat.png"))
-        save_image(y, os.path.join(args.out_dir, f"{i}_y.png"))
+        entry_basename = basename_table.get(i, f"{i}")
+        if x is not None:
+            save_image(x, os.path.join(args.out_dir, f"{entry_basename}_x.png"))
+        save_image(y, os.path.join(args.out_dir, f"{entry_basename}_y.png"))
+        save_image(x_hat, os.path.join(args.out_dir, f"{entry_basename}_x_hat.png"))
 
 N = len(psnr_list)
-print(f"N: {N}")
+if N != 0:
+    print(f"N: {N}")
 
-psnr_average = np.mean(psnr_list)
-ssim_average = np.mean(ssim_list)
-psnr_std = np.std(psnr_list)
-ssim_std = np.std(ssim_list)
+    psnr_average = np.mean(psnr_list)
+    ssim_average = np.mean(ssim_list)
+    psnr_std = np.std(psnr_list)
+    ssim_std = np.std(ssim_list)
 
-print(f"PSNR: {psnr_average:.1f}")
-print(f"PSNR std: {psnr_std:.1f}")
-print(f"SSIM: {ssim_average:.3f}")
-print(f"SSIM std: {ssim_std:.3f}")
+    print(f"PSNR: {psnr_average:.1f}")
+    print(f"PSNR std: {psnr_std:.1f}")
+    print(f"SSIM: {ssim_average:.3f}")
+    print(f"SSIM std: {ssim_std:.3f}")

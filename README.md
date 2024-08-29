@@ -65,7 +65,7 @@ python demo/test.py --device cuda:0 --task deblurring \
 
 | Flag            | Explanation                                                                                                                                                                                   |
 |-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--dataset`     | Test dataset, i.e. `div2k` (default), `urban100` or `ct`                                                                                                                                      |
+| `--dataset`     | Test dataset, i.e. `div2k` (default), `urban100`, `ct` or path to a directory                                                                                                                                      |
 | `--task`        | Task, i.e. `deblurring` or `sr`                                                                                                                                                               |
 | `--sr_factor`   | Super-resolution factor, i.e. `2` or `4` (optional)                                                                                                                                           |
 | `--kernel`      | Kernel name for deblurring, e.g. `Gaussian_R2` or `Box_R3` (optional)                                                                                                                         |
