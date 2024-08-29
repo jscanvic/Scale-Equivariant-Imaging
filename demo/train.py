@@ -93,7 +93,7 @@ if isdir(args.dataset):
         y = y[:3, :, :]
         assert args.method == "proposed", "Fine-tuning is only supported for the proposed method"
         x = torch.zeros_like(y)
-        f_crop = RandomCrop(args.Loss__crop_size)
+        f_crop = RandomCrop(args.PrepareTrainingPairs__crop_size)
         x, y = f_crop(x), f_crop(y)
         dataset.append((x, y))
 else:
