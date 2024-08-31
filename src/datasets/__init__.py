@@ -24,7 +24,7 @@ class PrepareTrainingPairs(Module):
         # even for a blur operator.
 
         if self.physics.task == "sr":
-            xy_size_ratio = self.physics.ratio
+            xy_size_ratio = self.physics.rate
         else:
             xy_size_ratio = 1
 
@@ -113,7 +113,7 @@ class TestDataset(BaseDataset):
         if x.shape != y.shape:
             h, w = y.shape[1], y.shape[2]
             if self.physics.task == "sr":
-                f = self.physics.ratio
+                f = self.physics.rate
             else:
                 f = 1
             x = TF.crop(x, top=0, left=0, height=h * f, width=w * f)
