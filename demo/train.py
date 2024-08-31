@@ -116,7 +116,7 @@ else:
     elif args.dataset == "ct":
         epochs = 100
     else:
-        raise ValueError(f"Unknown dataset: {args.dataset}")
+        epochs = 500
 
 # NOTE: It'd be better if the learning rate was the same for all tasks.
 if args.lr is not None:
