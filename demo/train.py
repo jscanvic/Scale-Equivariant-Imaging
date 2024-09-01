@@ -3,6 +3,9 @@
 import bm3d
 
 from argparse import BooleanOptionalAction
+import csv
+import os
+from os.path import isdir
 
 import torch
 from torch.optim import Adam
@@ -77,8 +80,6 @@ if args.weights is not None:
 
 loss = get_loss(args=args, physics=physics)
 
-import os
-from os.path import isdir
 if isdir(args.dataset):
     from glob import glob
     from os.path import basename
@@ -140,6 +141,18 @@ else:
     elif args.dataset == "ct":
         checkpoint_interval = 50
 
+
+os.makedirs(args.out_dir, exist_ok=True)
+filepath = f"{args.out_dir}/training.csv"
+file = open(filepath, "w", newline="", buffering=1)
+loss_history_writer = csv.writer(file)
+loss_history_writer.writerow(
+    [
+        "Epoch",
+        "Training Loss",
+    ]
+)
+
 # the entire training loop
 training_loss_metric = MeanMetric()
 for epoch in range(epochs):
@@ -167,6 +180,14 @@ for epoch in range(epochs):
     print(
         f"\t{current_timestamp}\t[{epoch + 1:{epochs_ndigits}d}/{epochs}]\tTraining_Loss: {epoch_training_loss:.2e}"
     )
+
+    # update the training record
+    row = [
+        epoch + 1,
+        epoch_training_loss,
+    ]
+    loss_history_writer.writerow(row)
+    is_final_epoch = epoch + 1 == epochs
 
     # save the training state regularly and after training completion
     if (epoch % checkpoint_interval == 0) or (epoch == epochs - 1):
