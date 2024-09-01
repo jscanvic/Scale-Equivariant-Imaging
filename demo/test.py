@@ -155,11 +155,11 @@ for i in tqdm(indices):
             os.makedirs(dirname(path), exist_ok=True)
             save_image(x, path)
 
-        path = os.path.join(args.out_dir, "blurry", entry_basename)
+        path = os.path.join(args.out_dir, "predictors", entry_basename)
         os.makedirs(dirname(path), exist_ok=True)
         save_image(y, path)
 
-        path = os.path.join(args.out_dir, "deblurred", entry_basename)
+        path = os.path.join(args.out_dir, "estimates", entry_basename)
         os.makedirs(dirname(path), exist_ok=True)
         save_image(x_hat, path)
 
