@@ -3,13 +3,14 @@
 import bm3d
 
 import os
-from os.path import isdir
+from os.path import isdir, dirname
 from math import isnan
 from argparse import BooleanOptionalAction
 
 import torch
 import numpy as np
 from tqdm import tqdm
+from torchvision.utils import save_image
 
 from datasets import get_dataset
 from metrics import psnr_fn, ssim_fn
@@ -75,7 +76,7 @@ if isdir(args.dataset):
         y = y[:3, :, :]
         x = None
         dataset.append((x, y))
-        basename_table[i] = basename(f)[:-4]
+        basename_table[i] = basename(f)
 else:
     dataset = get_dataset(args=args, purpose="test", physics=physics, device=args.device)
 
@@ -146,16 +147,21 @@ for i in tqdm(indices):
             print(f"METRICS_{i}: PSNR: {psnr_val:.1f}, SSIM: {ssim_val:.3f}")
 
     if args.save_images:
-        from torchvision.utils import save_image
-
         assert args.out_dir is not None
-        os.makedirs(args.out_dir, exist_ok=True)
 
-        entry_basename = basename_table.get(i, f"{i}")
+        entry_basename = basename_table.get(i, f"{i}.png")
         if x is not None:
-            save_image(x, os.path.join(args.out_dir, f"{entry_basename}_x.png"))
-        save_image(y, os.path.join(args.out_dir, f"{entry_basename}_y.png"))
-        save_image(x_hat, os.path.join(args.out_dir, f"{entry_basename}_x_hat.png"))
+            path = os.path.join(args.out_dir, "ground_truth", entry_basename)
+            os.makedirs(dirname(path), exist_ok=True)
+            save_image(x, path)
+
+        path = os.path.join(args.out_dir, "blurry", entry_basename)
+        os.makedirs(dirname(path), exist_ok=True)
+        save_image(y, path)
+
+        path = os.path.join(args.out_dir, "deblurred", entry_basename)
+        os.makedirs(dirname(path), exist_ok=True)
+        save_image(x_hat, path)
 
 N = len(psnr_list)
 if N != 0:
