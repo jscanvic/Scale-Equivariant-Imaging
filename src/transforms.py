@@ -32,7 +32,7 @@ def get_downsampling_grid(shape, downsampling_rate, center, dtype, device):
     v = torch.arange(h, dtype=dtype, device=device)
     u = 2 / w * u - 1
     v = 2 / h * v - 1
-    U, V = torch.meshgrid(u, v)
+    U, V = torch.meshgrid(u, v, indexing="ij")
     grid = torch.stack([V, U], dim=-1)
     grid = grid.view(1, h, w, 2).repeat(b, 1, 1, 1)
     grid = (
