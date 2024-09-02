@@ -26,6 +26,12 @@ cd Scale-Equivariant-Imaging
 pip install -r requirements.txt
 ```
 
+Make sure to run the scripts with the `src` directory in the `PYTHONPATH` environment variable.
+
+```sh
+export PYTHONPATH=src
+```
+
 ## Training a model
 
 You can train a model using one of the methods used in the paper, i.e. the proposed, supervised, and CSS methods, and equivariant imaging methods using shifts and rotations. The resulting weights are written to disk and can be tested as explained in the testing section. Additionally, the training state (i.e. model weights, optimizer state, etc.) is saved at different epochs to allow for resuming training. A sample usage of the training script is written below, along with an explanation of each flag.
