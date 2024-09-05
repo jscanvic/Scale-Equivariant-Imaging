@@ -8,7 +8,7 @@ import os
 from os.path import isdir
 
 import torch
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 from datetime import datetime
@@ -62,6 +62,7 @@ parser.add_argument(
 parser.add_argument("--GroundTruthDataset__split", type=str, default="train")
 parser.add_argument("--weights", type=str, default=None)
 parser.add_argument("--lr", type=float, default=None)
+parser.add_argument("--optimizer", type=str, default="Adam")
 args = parser.parse_args()
 
 physics = get_physics(args, device=args.device)
@@ -126,7 +127,16 @@ elif args.task == "sr":
     lr = 2e-4
 else:
     lr = 5e-4
-optimizer = Adam(model.parameters(), lr=lr, betas=(0.9, args.optimizer_beta2))
+
+if args.optimizer == "Adam":
+    optimizer_cls = Adam
+    optimizer_kwargs = {"betas": (0.9, args.optimizer_beta2)}
+elif args.optimizer == "SGD":
+    optimizer_cls = SGD
+    optimizer_kwargs = {}
+else:
+    raise ValueError(f"Unknown optimizer: {args.optimizer}")
+optimizer = optimizer_cls(model.parameters(), lr=lr, **optimizer_kwargs)
 scheduler = get_lr_scheduler(
     optimizer=optimizer, epochs=epochs, lr_scheduler_kind=args.lr_scheduler_kind
 )
