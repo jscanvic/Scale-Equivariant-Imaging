@@ -5,6 +5,7 @@ from functools import wraps
 from .div2k import Div2K
 from .tomography import TomographyDataset
 from .urban100 import Urban100
+from .fmd import FMD
 from .single_image import SingleImageDataset
 
 
@@ -23,12 +24,16 @@ class GroundTruthDataset(Dataset):
         self.size = size
         self.memoize_gt = memoize_gt
 
+        dataset_name = dataset_name.lower()
+
         if dataset_name == "div2k":
             self.dataset = Div2K(split, datasets_dir, download=download)
         elif dataset_name == "urban100":
             self.dataset = Urban100(split, datasets_dir, download=download)
         elif dataset_name == "ct":
             self.dataset = TomographyDataset(split, datasets_dir, download=download)
+        elif dataset_name == "fmd":
+            self.dataset = FMD(split, datasets_dir, download=download)
         elif dataset_name == "single_image":
             self.dataset = SingleImageDataset(**blueprint[SingleImageDataset.__name__])
         else:

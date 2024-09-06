@@ -163,6 +163,16 @@ loss_history_writer.writerow(
     ]
 )
 
+
+checkpoints_dir = f"{args.out_dir}/checkpoints"
+def format_checkpoint_filename(epoch):
+    return f"ckp_{epoch:03}.pt"
+
+# Save the initial weights
+checkpoint_filename = format_checkpoint_filename(0)
+checkpoint_path = f"{checkpoints_dir}/{checkpoint_filename}"
+save_training_state(epoch, model, optimizer, scheduler, checkpoint_path)
+
 # the entire training loop
 training_loss_metric = MeanMetric()
 for epoch in range(epochs):
@@ -201,7 +211,8 @@ for epoch in range(epochs):
 
     # save the training state regularly and after training completion
     if (epoch % checkpoint_interval == 0) or (epoch == epochs - 1):
-        checkpoint_path = f"{args.out_dir}/checkpoints/ckp_{epoch+1:03}.pt"
+        checkpoint_filename = format_checkpoint_filename(epoch + 1)
+        checkpoint_path = f"{checkpoints_dir}/{checkpoint_filename}"
         save_training_state(epoch, model, optimizer, scheduler, checkpoint_path)
 
 # save the weights after training completion

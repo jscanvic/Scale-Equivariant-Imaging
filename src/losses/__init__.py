@@ -174,13 +174,17 @@ class Loss(Module):
             raise ValueError(f"Unknwon method: {method}")
 
         if crop_training_pairs:
+            if hasattr(physics, "rate"):
+                self.xy_size_ratio = physics.rate
+            else:
+                self.xy_size_ratio = 1
             self.crop_fn = CropPair(location="random", size=crop_size)
         else:
             self.crop_fn = None
 
     def forward(self, x, y, model):
         if self.crop_fn is not None:
-            x, y = self.crop_fn(x, y)
+            x, y = self.crop_fn(x, y, xy_size_ratio=self.xy_size_ratio)
 
         return self.loss(x=x, y=y, model=model)
 
