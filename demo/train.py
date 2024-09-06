@@ -171,7 +171,11 @@ def format_checkpoint_filename(epoch):
 # Save the initial weights
 checkpoint_filename = format_checkpoint_filename(0)
 checkpoint_path = f"{checkpoints_dir}/{checkpoint_filename}"
-save_training_state(epoch, model, optimizer, scheduler, checkpoint_path)
+save_training_state(epoch=0,
+                    model=model,
+                    optimizer=optimizer,
+                    scheduler=scheduler,
+                    state_path=checkpoint_path)
 
 # the entire training loop
 training_loss_metric = MeanMetric()
