@@ -162,7 +162,10 @@ if args.fine_tuning_params is None:
     params = model.parameters()
 else:
     assert args.fine_tuning, "Fine-tuning parameters are only supported for fine-tuning"
-    param_keys = [...]
+    param_keys = [
+        "model.model.model.conv_last.weight",
+        "model.model.model.conv_last.bias",
+    ]
     params = [ model.get_parameter(key) for key in param_keys ]
 
 optimizer = optimizer_cls(params, lr=lr, **optimizer_kwargs)
