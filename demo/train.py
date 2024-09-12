@@ -62,7 +62,8 @@ parser.add_argument(
 parser.add_argument("--GroundTruthDataset__split", type=str, default="train")
 parser.add_argument("--weights", type=str, default=None)
 parser.add_argument("--lr", type=float, default=None)
-parser.add_argument("--optimizer", type=str, default="Adam")
+parser.add_argument("--optimizer", type=str, default=None)
+parser.add_argument("--fine_tuning", action=BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
 physics = get_physics(args, device=args.device)
@@ -82,6 +83,8 @@ if args.weights is not None:
 loss = get_loss(args=args, physics=physics)
 
 if isdir(args.dataset):
+    assert args.fine_tuning, "Datasets of predictors only are only supported for fine-tuning"
+    assert args.method == "proposed", "Fine-tuning is only supported for the proposed method"
     from glob import glob
     from os.path import basename
     from torchvision.io import read_image
@@ -93,7 +96,8 @@ if isdir(args.dataset):
         y = y.float() / 255.0
         # Discard the alpha channel if it exists
         y = y[:3, :, :]
-        assert args.method == "proposed", "Fine-tuning is only supported for the proposed method"
+        # The training algorithm does not use the input image but it is still
+        # passed around so we need to create a dummy one
         x = torch.zeros_like(y)
         f_crop = RandomCrop(args.PrepareTrainingPairs__crop_size)
         x, y = f_crop(x), f_crop(y)
@@ -123,19 +127,35 @@ else:
 # NOTE: It'd be better if the learning rate was the same for all tasks.
 if args.lr is not None:
     lr = args.lr
-elif args.task == "sr":
-    lr = 2e-4
 else:
-    lr = 5e-4
+    if not args.fine_tuning:
+        if args.task == "sr":
+            lr = 2e-4
+        else:
+            lr = 5e-4
+    else:
+        lr = 1e-3
 
-if args.optimizer == "Adam":
+print(f"\nSelected learning rate: {lr:e}\n")
+
+if args.optimizer is not None:
+    optimizer_kind = args.optimizer
+else:
+    if not args.fine_tuning:
+        optimizer_kind = "Adam"
+    else:
+        optimizer_kind = "SGD"
+
+print(f"\nSelected optimizer: {optimizer_kind}\n")
+
+if optimizer_kind == "Adam":
     optimizer_cls = Adam
-    optimizer_kwargs = {"betas": (0.9, args.optimizer_beta2)}
-elif args.optimizer == "SGD":
+    optimizer_kwargs = {"betas": (0.9, optimizer_kind_beta2)}
+elif optimizer_kind == "SGD":
     optimizer_cls = SGD
     optimizer_kwargs = {}
 else:
-    raise ValueError(f"Unknown optimizer: {args.optimizer}")
+    raise ValueError(f"Unknown optimizer: {optimizer_kind}")
 optimizer = optimizer_cls(model.parameters(), lr=lr, **optimizer_kwargs)
 scheduler = get_lr_scheduler(
     optimizer=optimizer, epochs=epochs, lr_scheduler_kind=args.lr_scheduler_kind
