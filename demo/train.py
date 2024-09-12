@@ -135,7 +135,7 @@ else:
         else:
             lr = 5e-4
     else:
-        lr = 1e-3
+        lr = 1e-2
 
 print(f"\nSelected learning rate: {lr:e}\n")
 
