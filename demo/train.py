@@ -64,6 +64,7 @@ parser.add_argument("--weights", type=str, default=None)
 parser.add_argument("--lr", type=float, default=None)
 parser.add_argument("--optimizer", type=str, default=None)
 parser.add_argument("--fine_tuning", action=BooleanOptionalAction, default=False)
+parser.add_argument("--fine_tuning_params", action=BooleanOptionalAction, default=None)
 args = parser.parse_args()
 
 physics = get_physics(args, device=args.device)
@@ -156,7 +157,15 @@ elif optimizer_kind == "SGD":
     optimizer_kwargs = {}
 else:
     raise ValueError(f"Unknown optimizer: {optimizer_kind}")
-optimizer = optimizer_cls(model.parameters(), lr=lr, **optimizer_kwargs)
+
+if args.fine_tuning_params is None:
+    params = model.parameters()
+else:
+    assert args.fine_tuning, "Fine-tuning parameters are only supported for fine-tuning"
+    param_keys = [...]
+    params = [ model.get_parameter(key) for key in param_keys ]
+
+optimizer = optimizer_cls(params, lr=lr, **optimizer_kwargs)
 scheduler = get_lr_scheduler(
     optimizer=optimizer, epochs=epochs, lr_scheduler_kind=args.lr_scheduler_kind
 )
