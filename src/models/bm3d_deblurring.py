@@ -9,7 +9,7 @@ class BM3D(Module):
     def __init__(self, physics, sigma_psd):
         super().__init__()
         self.sigma_psd = sigma_psd
-        self.kernel = physics.filter_fn
+        self.kernel = physics.kernel
 
     def forward(self, y):
         psf = self.kernel.cpu().numpy()
