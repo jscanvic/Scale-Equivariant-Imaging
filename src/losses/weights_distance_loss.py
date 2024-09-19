@@ -21,7 +21,7 @@ class WeightsDistanceLoss:
 
         assert keys == set(weights.keys())
 
-        loss = torch.zeros(1, device=self.device)
+        loss = torch.zeros((), device=self.device)
         for key in keys:
             pretrained_param = self.pretrained_weights[key]
             param = weights[key]

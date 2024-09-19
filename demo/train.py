@@ -64,7 +64,8 @@ parser.add_argument("--weights", type=str, default=None)
 parser.add_argument("--lr", type=float, default=None)
 parser.add_argument("--optimizer", type=str, default=None)
 parser.add_argument("--fine_tuning", action=BooleanOptionalAction, default=False)
-parser.add_argument("--fine_tuning_params", action=BooleanOptionalAction, default=None)
+parser.add_argument("--fine_tuning_params", action=BooleanOptionalAction, default=False)
+parser.add_argument("--weights_distance_loss", action=BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
 physics = get_physics(args, device=args.device)
@@ -158,13 +159,13 @@ elif optimizer_kind == "SGD":
 else:
     raise ValueError(f"Unknown optimizer: {optimizer_kind}")
 
-if args.fine_tuning_params is None:
+if not args.fine_tuning_params:
     params = model.parameters()
 else:
     assert args.fine_tuning, "Fine-tuning parameters are only supported for fine-tuning"
     param_keys = [
-        "model.model.model.conv_last.weight",
-        "model.model.model.conv_last.bias",
+        "model.model.conv_last.weight",
+        "model.model.conv_last.bias",
     ]
     params = [ model.get_parameter(key) for key in param_keys ]
 
@@ -209,6 +210,13 @@ save_training_state(epoch=0,
                     scheduler=scheduler,
                     state_path=checkpoint_path)
 
+if args.weights_distance_loss:
+    assert args.fine_tuning, "Weights distance loss is only supported for fine-tuning"
+    from losses.weights_distance_loss import WeightsDistanceLoss
+    weights_distance_loss = WeightsDistanceLoss(pretrained_model=model, lambd=1, device=args.device)
+else:
+    weights_distance_loss = None
+
 # the entire training loop
 training_loss_metric = MeanMetric()
 for epoch in range(epochs):
@@ -221,6 +229,9 @@ for epoch in range(epochs):
         optimizer.zero_grad()
 
         training_loss = loss(x=x, y=y, model=model)
+        if weights_distance_loss is not None:
+            training_loss += weights_distance_loss(model)
+
         training_loss.backward()
 
         optimizer.step()
