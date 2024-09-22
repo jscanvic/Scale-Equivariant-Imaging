@@ -152,7 +152,7 @@ print(f"\nSelected optimizer: {optimizer_kind}\n")
 
 if optimizer_kind == "Adam":
     optimizer_cls = Adam
-    optimizer_kwargs = {"betas": (0.9, optimizer_kind_beta2)}
+    optimizer_kwargs = {"betas": (0.9, args.optimizer_beta2)}
 elif optimizer_kind == "SGD":
     optimizer_cls = SGD
     optimizer_kwargs = {}

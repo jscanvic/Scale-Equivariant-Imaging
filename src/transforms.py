@@ -164,3 +164,14 @@ class ScalingTransform(Module):
 
     def forward(self, x):
         return self.transform(x)
+
+
+class CombinedTransform(Module):
+    def __init__(self, transforms):
+        super().__init__()
+        self.transforms = transforms
+
+    def forward(self, x):
+        for transform in self.transforms:
+            x = transform(x)
+        return x

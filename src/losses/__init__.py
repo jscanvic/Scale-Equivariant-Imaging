@@ -4,7 +4,7 @@ from deepinv.loss.metric import mse
 from deepinv.transform import Rotate, Shift
 
 from crop import CropPair
-from transforms import ScalingTransform
+from transforms import ScalingTransform, CombinedTransform
 from .r2r import R2REILoss
 from .sure import SureGaussianLoss
 
@@ -77,6 +77,11 @@ class ProposedLoss(Module):
 
         if transforms == "Scaling_Transforms":
             ei_transform = ScalingTransform(**blueprint[ScalingTransform.__name__])
+        elif transforms == "Rotations+Shifts":
+            ei_transform = CombinedTransform([
+                Rotate(),
+                Shift(),
+            ])
         elif transforms == "Rotations":
             ei_transform = Rotate()
         elif transforms == "Shifts":
