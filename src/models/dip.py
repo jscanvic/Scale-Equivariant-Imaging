@@ -1,5 +1,6 @@
 # code from https://deepinv.github.io/deepinv/auto_examples/basics/demo_dip.html
 
+import torch
 from torch.nn import Module
 from deepinv.models import ConvDecoder, DeepImagePrior as DIP
 
@@ -45,4 +46,5 @@ class DeepImagePrior(Module):
             verbose=False,
         ).to(y.device)
 
-        return model(y, self.physics)
+        with torch.enable_grad():
+            return model(y, self.physics)
