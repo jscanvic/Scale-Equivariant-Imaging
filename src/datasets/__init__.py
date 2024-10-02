@@ -40,6 +40,7 @@ class TrainingDataset(BaseDataset):
         css,
         noise2inverse,
         prepare_training_pairs,
+        _HOTFIX,
     ):
         super().__init__()
         self.synthetic_dataset = synthetic_dataset
@@ -47,9 +48,17 @@ class TrainingDataset(BaseDataset):
         self.css = css
         self.noise2inverse = noise2inverse
         self.prepare_training_pairs = prepare_training_pairs
+        self._HOTFIX = _HOTFIX
 
     def __getitem__(self, index):
         x, y = self.synthetic_dataset[index]
+        if self._HOTFIX:
+            if "_once" not in globals():
+                global _once
+                _once = True
+                print("HOTFIX")
+            T_crop = CropPair(location="random", size=48)
+            return T_crop(x, y, xy_size_ratio=self.physics.rate)
 
         # NOTE: This should ideally be done in the class CSSLoss instead but
         # the border effects in the current implementation make it challenging.
@@ -133,6 +142,7 @@ class Dataset(BaseDataset):
         css,
         noise2inverse,
         device,
+        _HOTFIX,
     ):
         super().__init__()
 
@@ -155,6 +165,7 @@ class Dataset(BaseDataset):
                 css=css,
                 noise2inverse=noise2inverse,
                 prepare_training_pairs=prepare_training_pairs,
+                _HOTFIX=_HOTFIX
             )
         elif purpose == "test":
             self.dataset = TestDataset(
@@ -172,7 +183,7 @@ class Dataset(BaseDataset):
         return self.dataset[index]
 
 
-def get_dataset(args, purpose, physics, device):
+def get_dataset(args, purpose, physics, device, _HOTFIX):
     if purpose == "test":
         noise2inverse = args.noise2inverse
         css = False
@@ -218,4 +229,5 @@ def get_dataset(args, purpose, physics, device):
         purpose=purpose,
         css=css,
         noise2inverse=noise2inverse,
+        _HOTFIX=_HOTFIX,
     )

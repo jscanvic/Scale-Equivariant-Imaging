@@ -65,4 +65,12 @@ class SureGaussianLoss(nn.Module):
         else:
             loss_sure = mse + div - self.sigma2 / y.size(0)
 
+        from os import environ
+        if "_TEMPORARY_HOTFIX" in environ:
+            if "_once123" not in globals():
+                globals()["_once123"] = True
+                print("_TEMPORARY_HOTFIX")
+            assert physics.rate is not None
+            return physics.rate ** 2 * loss_sure
+
         return loss_sure

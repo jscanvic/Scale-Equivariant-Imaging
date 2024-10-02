@@ -2,6 +2,7 @@ from torch.nn import Module
 from deepinv.loss import SupLoss, EILoss
 from deepinv.loss.metric import mse
 from deepinv.transform import Rotate, Shift
+from torch.nn.functional import l1_loss
 
 from crop import CropPair
 from transforms import ScalingTransform, CombinedTransform
@@ -13,7 +14,12 @@ class SupervisedLoss(Module):
     def __init__(self, physics):
         super().__init__()
         self.physics = physics
-        self.loss = SupLoss(metric=mse())
+        metric = mse()
+        from os import environ
+        if "SUPERVISED_L1" in environ:
+            print("SUPERVISED_L1")
+            metric = l1_loss
+        self.loss = SupLoss(metric=metric)
 
     def forward(self, x, y, model):
         x_net = model(y)
@@ -208,7 +214,6 @@ def get_loss(args, physics):
             sure_margin = (kernel_size - 1) // 2
         elif args.task == "sr":
             if args.partial_sure_sr:
-                assert args.sr_filter == "bicubic_torch"
                 sure_margin = 2
             else:
                 sure_margin = 0

@@ -78,7 +78,7 @@ if isdir(args.dataset):
         dataset.append((x, y))
         basename_table[i] = basename(f)
 else:
-    dataset = get_dataset(args=args, purpose="test", physics=physics, device=args.device)
+    dataset = get_dataset(args=args, purpose="test", physics=physics, device=args.device, _HOTFIX=False)
 
 psnr_list = []
 ssim_list = []

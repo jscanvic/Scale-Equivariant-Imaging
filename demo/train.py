@@ -66,6 +66,7 @@ parser.add_argument("--optimizer", type=str, default=None)
 parser.add_argument("--fine_tuning", action=BooleanOptionalAction, default=False)
 parser.add_argument("--fine_tuning_params", action=BooleanOptionalAction, default=False)
 parser.add_argument("--weights_distance_loss", action=BooleanOptionalAction, default=False)
+parser.add_argument("--RESUME", type=str, default=None)
 args = parser.parse_args()
 
 physics = get_physics(args, device=args.device)
@@ -105,10 +106,16 @@ if isdir(args.dataset):
         x, y = f_crop(x), f_crop(y)
         dataset.append((x, y))
 else:
+    if args.task == "sr":
+        _HOTFIX = True
+    else:
+        _HOTFIX = False
+
     dataset = get_dataset(args=args,
                           purpose="train",
                           physics=physics,
-                          device=args.device)
+                          device=args.device,
+                          _HOTFIX=_HOTFIX)
 
 dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
@@ -196,13 +203,31 @@ loss_history_writer.writerow(
     ]
 )
 
+DISABLED_SCHEDULER = False
+# LOAD CHECKPOINT IF NEEDED
+if args.RESUME is not None:
+    ckp_data = torch.load(args.RESUME, map_location=args.device)
+    ckp_epoch = ckp_data["epoch"]
+    ckp_params = ckp_data["params"]
+    ckp_optimizer = ckp_data["optimizer"]
+    ckp_scheduler = ckp_data["scheduler"]
+    print("Loading checkpoint from epoch", ckp_epoch)
+    model.load_weights(ckp_params)
+    optimizer.load_state_dict(ckp_optimizer)
+    scheduler.load_state_dict(ckp_scheduler)
+    # we disable the scheduler entirely
+    DISABLED_SCHEDULER = True
+    # we set a fixed learning rate manually
+    assert args.lr is not None
+    for param_group in optimizer.param_groups:
+        param_group["lr"] = args.lr
 
 checkpoints_dir = f"{args.out_dir}/checkpoints"
-def format_checkpoint_filename(epoch):
-    return f"ckp_{epoch:03}.pt"
+def format_checkpoint_filename(epoch, max_epoch):
+    return f"ckp_{epoch:0{len(str(max_epoch))}}.pt"
 
 # Save the initial weights
-checkpoint_filename = format_checkpoint_filename(0)
+checkpoint_filename = format_checkpoint_filename(0, epochs)
 checkpoint_path = f"{checkpoints_dir}/{checkpoint_filename}"
 save_training_state(epoch=0,
                     model=model,
@@ -238,7 +263,8 @@ for epoch in range(epochs):
 
         training_loss_metric.update(training_loss.item())
 
-    scheduler.step()
+    if not DISABLED_SCHEDULER:
+        scheduler.step()
 
     # log progress to stdout
     epochs_ndigits = len(str(int(epochs)))
@@ -258,7 +284,7 @@ for epoch in range(epochs):
 
     # save the training state regularly and after training completion
     if (epoch % checkpoint_interval == 0) or (epoch == epochs - 1):
-        checkpoint_filename = format_checkpoint_filename(epoch + 1)
+        checkpoint_filename = format_checkpoint_filename(epoch + 1, epochs)
         checkpoint_path = f"{checkpoints_dir}/{checkpoint_filename}"
         save_training_state(epoch, model, optimizer, scheduler, checkpoint_path)
 
