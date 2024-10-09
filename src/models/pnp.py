@@ -24,9 +24,9 @@ class PnPModel(Module):
         if noise_level_img == 0:
             noise_level_img = 1e-5
 
-        lamb, sigma_denoiser, stepsize, max_iter = get_DPIR_params(noise_level_img)
+        sigma_denoiser, stepsize, max_iter = get_DPIR_params(noise_level_img)
 
-        params_algo = {"stepsize": stepsize, "g_param": sigma_denoiser, "lambda": lamb}
+        params_algo = {"stepsize": stepsize, "g_param": sigma_denoiser}
 
         data_fidelity = L2()
 
@@ -34,7 +34,6 @@ class PnPModel(Module):
             in_channels=channels,
             out_channels=channels,
             pretrained="download",
-            train=False,
             device=device,
         )
 
