@@ -13,6 +13,7 @@ from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 from datetime import datetime
 from torchmetrics import MeanMetric
+import numpy as np
 
 from datasets import get_dataset
 from losses import get_loss
@@ -22,6 +23,12 @@ from training import save_training_state, get_weights
 from physics import get_physics
 from settings import DefaultArgParser
 from scheduler import get_lr_scheduler
+import random
+
+torch.manual_seed(0)
+torch.cuda.manual_seed(0)
+np.random.seed(0)
+random.seed(0)
 
 parser = DefaultArgParser()
 # NOTE: Some of these arguments should be better tied to their respective class.
@@ -250,7 +257,6 @@ for epoch in range(epochs):
     # a single epoch
     for x, y in dataloader:
         x, y = x.to(args.device), y.to(args.device)
-
         optimizer.zero_grad()
 
         training_loss = loss(x=x, y=y, model=model)

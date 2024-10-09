@@ -48,20 +48,11 @@ class TrainingDataset(BaseDataset):
         self.css = css
         self.noise2inverse = noise2inverse
         self.prepare_training_pairs = prepare_training_pairs
-        self._HOTFIX = _HOTFIX
+        self.important_unnamed_flag = _HOTFIX
 
     def __getitem__(self, index):
         x, y = self.synthetic_dataset[index]
-        if self._HOTFIX:
-            if "_once" not in globals():
-                global _once
-                _once = True
-                print("HOTFIX")
-            T_crop = CropPair(location="random", size=48)
-            return T_crop(x, y, xy_size_ratio=self.physics.rate)
 
-        # NOTE: This should ideally be done in the class CSSLoss instead but
-        # the border effects in the current implementation make it challenging.
         if self.css:
             physics_manager = getattr(self.physics, "__manager")
             y = y.unsqueeze(0)
@@ -70,11 +61,14 @@ class TrainingDataset(BaseDataset):
             y = y.squeeze(0)
             x, y = y, z
 
-        # NOTE: This should ideally either be done in the model, or not at
-        # all.
-        x, y = self.prepare_training_pairs(x, y)
-
-        return x, y
+        if self.important_unnamed_flag:
+            T_crop = CropPair(location="random", size=48)
+            return T_crop(x, y, xy_size_ratio=self.physics.rate)
+        else:
+            # NOTE: This should ideally either be done in the model, or not at
+            # all.
+            x, y = self.prepare_training_pairs(x, y)
+            return x, y
 
     def __len__(self):
         return len(self.synthetic_dataset)
