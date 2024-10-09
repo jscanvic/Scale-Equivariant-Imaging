@@ -70,20 +70,6 @@ class TrainingDataset(BaseDataset):
             y = y.squeeze(0)
             x, y = y, z
 
-        # NOTE: It's unclear why this is done only for the training set.
-        # NOTE: This should ideally be done in the model.
-        if self.noise2inverse:
-            degradation_inverse_fn = self.physics.A_dagger
-            physics_filter = getattr(self.physics, "filter", None)
-            T_n2i = Noise2InverseTransform(
-                task=self.physics.task,
-                physics_filter=physics_filter,
-                degradation_inverse_fn=degradation_inverse_fn,
-            )
-            x, y = T_n2i(x.unsqueeze(0), y.unsqueeze(0))
-            x = x.squeeze(0)
-            y = y.squeeze(0)
-
         # NOTE: This should ideally either be done in the model, or not at
         # all.
         x, y = self.prepare_training_pairs(x, y)
