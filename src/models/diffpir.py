@@ -3,7 +3,7 @@ import torch
 from torch.nn import Module
 import numpy as np
 from deepinv.sampling import DiffPIR as DiffPIRBase
-from deepinv.models import DRUNet
+from deepinv.models import DRUNet, DiffUNet
 from deepinv.optim import L2
 
 
@@ -13,6 +13,9 @@ class DiffPIR(Module):
         self.physics = physics
         if "model" not in kwargs:
             denoiser = DRUNet(pretrained="download")
+            kwargs["model"] = denoiser
+        elif kwargs["model"] == "DiffUNet":
+            denoiser = DiffUNet(pretrained="download")
             kwargs["model"] = denoiser
         if "data_fidelity" not in kwargs:
             kwargs["data_fidelity"] = L2()

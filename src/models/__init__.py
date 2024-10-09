@@ -114,6 +114,8 @@ class Model(Module):
             self.model = BM3D(physics=physics, sigma_psd=noise_level / 255)
         elif kind == "DiffPIR":
             self.model = DiffPIR(physics=physics)
+        elif kind == "DiffPIR_DiffUNet":
+            self.model = DiffPIR(physics=physics, model="DiffUNet")
         elif kind == "DPS":
             self.model = DPS(physics=physics, device=device)
         elif kind == "TV":
