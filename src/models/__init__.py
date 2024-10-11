@@ -122,7 +122,7 @@ class Model(Module):
             )
         elif kind == "BM3D":
             self.model = BM3D(physics=physics, sigma_psd=noise_level / 255)
-        elif kind == "DiffPIR":
+        elif kind == "DiffPIR_DRUNet":
             self.model = DiffPIR(physics=physics)
         elif kind == "DiffPIR_DiffUNet":
             self.model = DiffPIR(physics=physics, model="DiffUNet")
