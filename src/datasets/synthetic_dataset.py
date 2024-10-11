@@ -40,6 +40,18 @@ class SyntheticDataset(Dataset):
         y = y.squeeze(0)
         x = x.squeeze(0)
 
+        from os import environ
+        if "HOMOGENEOUS_SWINIR" in environ:
+            if self.physics_manager.task == "sr":
+                if "_once456" not in globals():
+                    print("\nUpsampling low-resolution images using bicubic interpolation before processing\n")
+                    globals()["_once456"] = True
+                rate = self.physics_manager.physics.rate
+                from torch.nn.functional import interpolate
+                y = y.unsqueeze(0)
+                y = interpolate(y, x.shape[-2:], mode="bicubic", align_corners=False)
+                y = y.squeeze(0)
+
         return x, y
 
     def __len__(self):

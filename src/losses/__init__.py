@@ -192,6 +192,13 @@ class Loss(Module):
             self.crop_fn = CropPair(location="random", size=crop_size)
         else:
             self.crop_fn = None
+        from os import environ
+        if "HOMOGENEOUS_SWINIR" in environ:
+            if "_once453" not in globals():
+                print("\nDo not crop training pairs as we process the loss\n")
+                globals()["_once453"] = True
+            self.crop_fn = None
+
 
     def forward(self, x, y, model):
         if self.crop_fn is not None:

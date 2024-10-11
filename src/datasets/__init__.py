@@ -18,6 +18,13 @@ class PrepareTrainingPairs(Module):
         self.physics = physics
         self.crop_size = crop_size
         self.crop_location = crop_location
+        from os import environ
+        if "HOMOGENEOUS_SWINIR" in environ:
+            if "_once452" not in globals():
+                print("\nCropping training patches of the same size\n")
+                globals()["_once452"] = True
+            print("\nSetting a training crop size of 48 pixels\n")
+            self.crop_size = 48
 
     def forward(self, x, y):
         # NOTE: It'd be great if physics contained its own downsampling ratio
@@ -25,6 +32,13 @@ class PrepareTrainingPairs(Module):
 
         if self.physics.task == "sr":
             xy_size_ratio = self.physics.rate
+            from os import environ
+            if "HOMOGENEOUS_SWINIR" in environ:
+                if "_once451" not in globals():
+                    print("\nCropping training patches of the same size\n")
+                    globals()["_once451"] = True
+                xy_size_ratio = 1
+
         else:
             xy_size_ratio = 1
 
@@ -62,6 +76,11 @@ class TrainingDataset(BaseDataset):
             x, y = y, z
 
         if self.important_unnamed_flag:
+            from os import environ
+            if "HOMOGENEOUS_SWINIR" in environ:
+                x, y = self.prepare_training_pairs(x, y)
+                return x, y
+
             T_crop = CropPair(location="random", size=48)
             return T_crop(x, y, xy_size_ratio=self.physics.rate)
         else:

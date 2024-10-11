@@ -37,9 +37,19 @@ class ProposedModel(Module):
     ):
         super().__init__()
         if architecture == "Transformer":
-            upsampler = "pixelshuffle" if sampling_rate > 1 else None
+            if sampling_rate > 1:
+                upsampling_rate = sampling_rate
+                upsampler = "pixelshuffle"
+                from os import environ
+                if "HOMOGENEOUS_SWINIR" in environ:
+                    print("\nUsing homogeneous SwinIR\n")
+                    upsampling_rate = 1
+                    upsampler = None
+            else:
+                upsampling_rate = 1
+                upsampler = None
             self.model = SwinIR(
-                upscale=sampling_rate,
+                upscale=upsampling_rate,
                 upsampler=upsampler,
                 img_size=48,
                 patch_size=1,
