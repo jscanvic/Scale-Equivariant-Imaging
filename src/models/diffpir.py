@@ -25,10 +25,14 @@ class DiffPIR(Module):
 
     def forward(self, y):
         if self.diffunet:
-            # pad y so that each of its dimensions is divisible by 16
-            pad_h = (16 - y.shape[2] % 16) % 16
-            pad_w = (16 - y.shape[3] % 16) % 16
-            y = F.pad(y, (0, pad_w, 0, pad_h), mode="reflect")
+            if self.physics.task == "deblurring":
+                pad_h = (32 - y.shape[2] % 32) % 32
+                pad_w = (32 - y.shape[3] % 32) % 32
+                y = F.pad(y, (0, pad_w, 0, pad_h), mode="reflect")
+            else:
+                pad_h = (16 - y.shape[2] % 16) % 16
+                pad_w = (16 - y.shape[3] % 16) % 16
+                y = F.pad(y, (0, pad_w, 0, pad_h), mode="reflect")
 
         x_hat = self.backbone(y, self.physics)
 
