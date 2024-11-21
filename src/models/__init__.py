@@ -12,6 +12,7 @@ from .upsample import Upsample
 from .diffpir import DiffPIR
 from .dps import DPS
 from .tv import TV
+from .aliasfree import AliasFreeUNet
 
 
 class Identity(Module):
@@ -78,6 +79,28 @@ class ProposedModel(Module):
                 upsampling_rate=sampling_rate,
                 **blueprint[ConvolutionalModel.__name__],
             )
+        elif architecture == "TranslationEquivariantUNet":
+            self.model = AliasFreeUNet(
+                    in_channels=3,
+                    out_channels=3,
+                    residual=True,
+                    cat=True,
+                    bias=False,
+                    scales=5,
+                    block_kind="ConvNextBlock",
+                    rotation_equivariant=False,
+                )
+        elif architecture == "RotoTranslationEquivariantUNet":
+            self.model = AliasFreeUNet(
+                    in_channels=3,
+                    out_channels=3,
+                    residual=True,
+                    cat=True,
+                    bias=False,
+                    scales=5,
+                    block_kind="ConvNextBlock",
+                    rotation_equivariant=True,
+                )
         else:
             raise ValueError(f"Unknown model kind: {architecture}")
 
