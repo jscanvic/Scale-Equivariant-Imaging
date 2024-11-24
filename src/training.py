@@ -14,7 +14,8 @@ def save_training_state(epoch, model, optimizer, scheduler, state_path):
     :param state_path: path where to save the state
     """
     save_dir = os.path.dirname(state_path)
-    os.makedirs(save_dir, exist_ok=True)
+    if save_dir != "":
+        os.makedirs(save_dir, exist_ok=True)
 
     weights = model.get_weights()
 
