@@ -16,6 +16,8 @@ Sample deblurring results using the proposed self-supervised method and the supe
 
 ## Getting Started
 
+For better reproducibility, we recommend using Python 3.12.1.
+
 1. Clone the repository
 ```sh
 git clone https://github.com/jscanvic/Scale-Equivariant-Imaging
