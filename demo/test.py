@@ -4,7 +4,6 @@ import bm3d
 
 import os
 from os.path import isdir, dirname
-from math import isnan
 from argparse import BooleanOptionalAction
 
 import torch
@@ -13,7 +12,7 @@ from tqdm import tqdm
 from torchvision.utils import save_image
 
 from datasets import get_dataset
-from metrics import psnr_fn, ssim_fn
+from metrics import compute_metrics
 from models import get_model
 from physics import get_physics
 from settings import DefaultArgParser
@@ -82,6 +81,7 @@ else:
 
 psnr_list = []
 ssim_list = []
+lpips_list = []
 
 if args.save_psf:
     from torchvision.utils import save_image
@@ -136,15 +136,27 @@ for i in tqdm(indices):
     else:
         x_hat = model(y).detach()
 
+    # Quantize and clamp
+    def quantize_and_clamp(im):
+        # quantize
+        im = (im * 255.0).round() / 255.0
+        # clamp
+        return im.clamp(0.0, 1.0)
+
+    x = quantize_and_clamp(x) if x is not None else None
+    y = quantize_and_clamp(y)
+    x_hat = quantize_and_clamp(x_hat)
+
+    # Compute the metrics
     if x is not None:
-        psnr_val = psnr_fn(x_hat, x).item()
-        ssim_val = ssim_fn(x_hat, x).item()
+        psnr_val, ssim_val, lpips_val = compute_metrics(x.squeeze(0), x_hat.squeeze(0))
 
         psnr_list.append(psnr_val)
         ssim_list.append(ssim_val)
+        lpips_list.append(lpips_val)
 
         if args.print_all_metrics:
-            print(f"METRICS_{i}: PSNR: {psnr_val:.1f}, SSIM: {ssim_val:.3f}")
+            print(f"METRICS_{i}: PSNR: {psnr_val:.2f}, SSIM: {ssim_val:.4f}, LIPS: {lpips_val:.4f}")
 
     if args.save_images:
         assert args.out_dir is not None
@@ -169,10 +181,14 @@ if N != 0:
 
     psnr_average = np.mean(psnr_list)
     ssim_average = np.mean(ssim_list)
+    lpips_average = np.mean(lpips_list)
     psnr_std = np.std(psnr_list)
     ssim_std = np.std(ssim_list)
+    lpips_std = np.std(lpips_list)
 
-    print(f"PSNR: {psnr_average:.1f}")
-    print(f"PSNR std: {psnr_std:.1f}")
-    print(f"SSIM: {ssim_average:.3f}")
-    print(f"SSIM std: {ssim_std:.3f}")
+    print(f"PSNR: {psnr_average:.2f}")
+    print(f"PSNR std: {psnr_std:.2f}")
+    print(f"SSIM: {ssim_average:.4f}")
+    print(f"SSIM std: {ssim_std:.4f}")
+    print(f"LPIPS: {lpips_average:.4f}")
+    print(f"LPIPS std: {lpips_std:.4f}")

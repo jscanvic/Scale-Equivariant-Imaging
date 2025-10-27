@@ -1,7 +1,12 @@
 deepinv @ git+https://github.com/deepinv/deepinv.git@v.0.2.0
 kornia==0.6.12
 Pillow==9.5.0
-torch==2.0.0
+torch==2.2.2+cu121
 torchmetrics==0.11.4
-torchvision==0.15.1
-tqdm==4.65.0
+torchvision==0.17.2+cu121
+tqdm==4.67.1
+bm3d==4.0.1
+datasets==2.20.0
+numpy==1.26.0
+timm==0.9.12
+pyiqa==0.1.14.1

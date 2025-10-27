@@ -67,7 +67,7 @@ You can test a model with precomputed weights used in the paper, which we made a
 ```sh
 python demo/test.py --device cuda:0 --task deblurring \
  --kernel Gaussian_R2 \
- --weights Deblurring_Gaussian_R2_Noise5_Proposed \
+ --weights Div2K-Train_Deblurring_Gaussian_R2_Noise5_SEI \
  --download
 ```
 
