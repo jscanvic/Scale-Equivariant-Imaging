@@ -148,7 +148,7 @@ else:
         if args.task == "sr":
             lr = 2e-4
         else:
-            lr = 5e-4
+            lr = 1e-4
     else:
         lr = 1e-2
 
