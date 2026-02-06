@@ -2,7 +2,7 @@
 
 [![arXiv](https://img.shields.io/badge/arXiv-Scale%20EI-b31b1b.svg)](https://arxiv.org/abs/2312.11232)
 [![Code](https://img.shields.io/badge/GitHub-Code-blue.svg)](https://github.com/jscanvic/Scale-Equivariant-Imaging)
-[![Project](https://img.shields.io/badge/IEEE%20Explore-Paper-green.svg)](10.1109/TCI.2026.3660011)
+[![Project](https://img.shields.io/badge/IEEE%20Explore-Paper-green.svg)](https://doi.org/10.1109/TCI.2026.3660011)
 
 <img src="./assets/overview.png" alt="A diagram showing an overview of the method" width="100%">
 
