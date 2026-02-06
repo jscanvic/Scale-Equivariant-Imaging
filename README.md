@@ -4,7 +4,7 @@
 [![Code](https://img.shields.io/badge/GitHub-Code-blue.svg)](https://github.com/jscanvic/Scale-Equivariant-Imaging)
 [![Project](https://img.shields.io/badge/IEEE%20Explore-Paper-green.svg)](10.1109/TCI.2026.3660011)
 
-<img src="./assets/figure1.png" alt="A diagram showing an overview of the method" width="100%">
+<img src="./assets/Figure1.png" alt="A diagram showing an overview of the method" width="100%">
 
 **Scale-Equivariant Imaging: Self-Supervised Learning for Image Super-Resolution and Deblurring**<br>
 [Jérémy Scanvic](https://jeremyscanvic.com), [Mike Davies](https://www.research.ed.ac.uk/en/persons/michael-davies), [Patrice Abry](https://perso.ens-lyon.fr/patrice.abry), [Julián Tachella](https://tachella.github.io)
